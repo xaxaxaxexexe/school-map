@@ -7,4 +7,3 @@ dist/
 .env.*
 !.env.example
 .omc
-.DS_Store
