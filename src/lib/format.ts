@@ -1,9 +1,28 @@
+import type { School } from "@/types";
+
 export function yesNo(value: boolean): string {
 	return value ? "Да" : "Нет";
 }
 
 export function fmt(v: number | null): string {
 	return v != null ? v.toLocaleString("ru") : "—";
+}
+
+export function fmtSecondShiftStudents(
+	school: Pick<School, "shift" | "second_shift_students">,
+): string {
+	if (school.second_shift_students != null) {
+		return school.second_shift_students.toLocaleString("ru");
+	}
+
+	if (school.shift === 2) return "Н/Д";
+	if (school.shift === 1) return "0";
+
+	return "—";
+}
+
+export function schoolBuildingsCount(school: Pick<School, "buildings">): number {
+	return school.buildings ?? 1;
 }
 
 export function schoolWord(n: number): string {

@@ -10,7 +10,11 @@ import { matchBorderToDistrictId, getDistrictColor } from "@/data/districts";
 import bordersGeoJSON from "@/data/borders.geojson?raw";
 import republicBorderJSON from "@/data/republic-border.geojson?raw";
 import type { District, School } from "@/types";
-import { yesNo } from "@/lib/format";
+import {
+	fmtSecondShiftStudents,
+	schoolBuildingsCount,
+	yesNo,
+} from "@/lib/format";
 
 export interface YandexMapHandle {
 	panTo(center: [number, number], zoom: number, force?: boolean): void;
@@ -57,10 +61,8 @@ function compactSchoolSummary(school: School) {
 	].join(" · ");
 
 	const line2 = [
-		school.second_shift_students != null
-			? `2 смена: ${school.second_shift_students.toLocaleString("ru")}`
-			: null,
-		school.buildings != null ? `Зданий: ${school.buildings}` : null,
+		`2 смена: ${fmtSecondShiftStudents(school)}`,
+		`Зданий: ${schoolBuildingsCount(school)}`,
 	]
 		.filter(Boolean)
 		.join(" · ");

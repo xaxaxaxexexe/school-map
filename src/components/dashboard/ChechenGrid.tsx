@@ -5,13 +5,6 @@ interface ChechenGridProps {
 	onSelect: (id: number) => void;
 }
 
-const GROZNY_INNER = new Set([
-	"Ахматовский р-н",
-	"Висаитовский р-н",
-	"Шейх-Мансуровский р-н",
-	"Байсангуровский р-н",
-]);
-
 const SHORT: Record<string, string> = {
 	"Грозный (город)": "Грозный",
 	"Аргун (город)": "Аргун",
@@ -95,11 +88,6 @@ const GRID: CellDef[][] = [
 	],
 ];
 
-const GROZNY_INNER_GRID = [
-	["Висаитовский р-н", "Ахматовский р-н"],
-	["Шейх-Мансуровский р-н", "Байсангуровский р-н"],
-];
-
 function findRow(rows: DistrictRow[], name: string) {
 	return rows.find((r) => r.district.name === name || r.shortName === name);
 }
@@ -147,9 +135,7 @@ function CellButton({
 
 export function ChechenGrid({ rows, onSelect }: ChechenGridProps) {
 	const groznyMain = findRow(rows, "Грозный (город)");
-	const groznyBias =
-		hasBias(groznyMain) ||
-		[...GROZNY_INNER].some((n) => hasBias(findRow(rows, n)));
+	const groznyBias = hasBias(groznyMain);
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -182,24 +168,11 @@ export function ChechenGrid({ rows, onSelect }: ChechenGridProps) {
 											groznyMain && onSelect(groznyMain.district.id!)
 										}
 										className="absolute inset-0 z-10 cursor-pointer transition hover:bg-white/10 active:scale-[0.97]"
+										title="г. Грозный"
 									/>
 									<span className="pointer-events-none absolute bottom-1 left-1.5 z-20 text-[8px] font-bold text-white/90 drop-shadow-sm sm:text-[10px]">
 										Грозный
 									</span>
-									<div
-										className="pointer-events-auto absolute inset-[4px] bottom-auto z-30 grid grid-cols-2 grid-rows-2 gap-[2px]"
-										style={{ height: "60%" }}
-									>
-										{GROZNY_INNER_GRID.flat().map((name) => (
-											<CellButton
-												key={name}
-												row={findRow(rows, name)}
-												onSelect={onSelect}
-												small
-												label={SHORT[name]}
-											/>
-										))}
-									</div>
 								</div>
 							);
 						}

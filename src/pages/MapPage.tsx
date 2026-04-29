@@ -188,7 +188,7 @@ export function MapPage() {
 					to="/admin"
 					className="inline-flex items-center gap-1.5 rounded-xl bg-white dark:bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-700 dark:text-neutral-300 shadow-lg dark:shadow-neutral-900/40 transition hover:bg-neutral-50 dark:hover:bg-neutral-700 active:scale-95"
 				>
-					Загрузить данные
+					Админ-панель
 				</Link>
 				<ThemeToggle />
 			</div>

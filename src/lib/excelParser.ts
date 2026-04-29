@@ -4,6 +4,45 @@ import { DISTRICT_ID_MAP } from "@/data/districts";
 
 type Cell = string | number | boolean | null | undefined;
 
+const CANONICAL_GROZNY_DISTRICT = "Грозный (город)";
+const GROZNY_INTERNAL_DISTRICTS = new Set([
+	"ахматовский р-н",
+	"висаитовский р-н",
+	"шейх-мансуровский р-н",
+	"байсангуровский р-н",
+]);
+const GROZNY_NAME_ALIASES = new Set([
+	"грозный",
+	"г. грозный",
+	"город грозный",
+	"грозный (город)",
+	"городской округ грозный",
+]);
+const NEGATIVE_PRESENCE_BOOL_VALUES = new Set([
+	"-",
+	"—",
+	"0",
+	"0.0",
+	"false",
+	"n",
+	"no",
+	"ytn",
+	"нет",
+	"нет.",
+	"ложь",
+	"не отремонтирована",
+	"не отремонтировано",
+	"не отремонтирован",
+	"не проводился",
+	"не проводилась",
+	"не проводилось",
+	"не требуется",
+	"не требует",
+	"не требуются",
+	"нет необходимости",
+	"отсутствует",
+]);
+
 function isNan(v: Cell): boolean {
 	return v == null || (typeof v === "number" && Number.isNaN(v));
 }
@@ -30,6 +69,39 @@ function toBool(v: Cell): boolean {
 	const s = toStr(v);
 	if (!s) return false;
 	return ["да", "yes", "true", "1", "y", "истина"].includes(s.toLowerCase());
+}
+
+function normalizeDistrictName(v: string | null): string | null {
+	if (!v) return null;
+	const name = v.trim();
+	const normalized = name.toLowerCase().replace(/\s+/g, " ").trim();
+
+	if (
+		GROZNY_INTERNAL_DISTRICTS.has(normalized) ||
+		GROZNY_NAME_ALIASES.has(normalized)
+	) {
+		return CANONICAL_GROZNY_DISTRICT;
+	}
+
+	return name;
+}
+
+function toBoolByPresence(v: Cell): boolean {
+	const s = toStr(v);
+	if (!s) return false;
+
+	const normalized = s
+		.toLowerCase()
+		.replace(/\s+/g, " ")
+		.replace(/^[\s.;,:]+|[\s.;,:]+$/g, "");
+
+	if (NEGATIVE_PRESENCE_BOOL_VALUES.has(normalized)) return false;
+
+	return !/^(нет[\s/.-]|не треб|не отремонт|не провод)/.test(normalized);
+}
+
+function buildingsCount(v: Cell): number {
+	return toInt(v) ?? 1;
 }
 
 function parseCoords(v: Cell): [number, number] | null {
@@ -80,7 +152,11 @@ function isDistrictRow(name: string | null, site: string | null): boolean {
 	const stripped = name.trim();
 	if (stripped.toLowerCase() === "всего") return false;
 	if (site) return false;
-	return stripped in DISTRICT_ID_MAP;
+	const normalized = normalizeDistrictName(stripped);
+	return (
+		stripped in DISTRICT_ID_MAP ||
+		(!!normalized && normalized in DISTRICT_ID_MAP)
+	);
 }
 
 interface ParsedData {
@@ -90,9 +166,29 @@ interface ParsedData {
 
 function buildPayload(districts: District[], schools: School[]): ParsedData {
 	const byName = new Map<string, District>();
-	for (const d of districts) byName.set(d.name, d);
+	for (const d of districts) {
+		const normalizedName = normalizeDistrictName(d.name) ?? d.name;
+		const current = byName.get(normalizedName);
+		if (!current) {
+			byName.set(normalizedName, {
+				id: DISTRICT_ID_MAP[normalizedName] ?? d.id,
+				name: normalizedName,
+				students: d.students ?? 0,
+				teachers: d.teachers ?? 0,
+				workers: d.workers ?? 0,
+			});
+			continue;
+		}
+
+		current.students = (current.students ?? 0) + (d.students ?? 0);
+		current.teachers = (current.teachers ?? 0) + (d.teachers ?? 0);
+		current.workers = (current.workers ?? 0) + (d.workers ?? 0);
+	}
 
 	for (const [name, id] of Object.entries(DISTRICT_ID_MAP)) {
+		const normalizedName = normalizeDistrictName(name);
+		if (!normalizedName || normalizedName !== name) continue;
+
 		if (byName.has(name)) {
 			const cur = byName.get(name)!;
 			if (cur.id === null) cur.id = id;
@@ -110,6 +206,20 @@ function buildPayload(districts: District[], schools: School[]): ParsedData {
 	return { districts: merged, schools };
 }
 
+export function normalizeParsedData(data: ParsedData): ParsedData {
+	const schools = data.schools.map((school) => ({
+		...school,
+		district: normalizeDistrictName(school.district),
+		buildings: school.buildings ?? 1,
+	}));
+	const districts = data.districts.map((district) => ({
+		...district,
+		name: normalizeDistrictName(district.name) ?? district.name,
+	}));
+
+	return buildPayload(districts, schools);
+}
+
 function parseLegacy(rows: Cell[][]): ParsedData {
 	const districts: District[] = [];
 	const schools: School[] = [];
@@ -122,9 +232,10 @@ function parseLegacy(rows: Cell[][]): ParsedData {
 		const nameStripped = name?.trim() ?? null;
 
 		if (isNan(rowId) && isDistrictRow(name, toStr(row[7]))) {
+			const districtName = normalizeDistrictName(nameStripped);
 			currentDistrict = {
-				id: DISTRICT_ID_MAP[nameStripped!] ?? null,
-				name: nameStripped!,
+				id: districtName ? DISTRICT_ID_MAP[districtName] ?? null : null,
+				name: districtName ?? nameStripped!,
 				students: toInt(row[4]),
 				workers: toInt(row[5]),
 				teachers: toInt(row[6]),
@@ -133,7 +244,9 @@ function parseLegacy(rows: Cell[][]): ParsedData {
 			continue;
 		}
 
-		const districtName = currentDistrict?.name ?? null;
+		const districtName = currentDistrict
+			? normalizeDistrictName(currentDistrict.name)
+			: null;
 		const coords = parseCoords(row[10]);
 
 		if (!districtName && coords === null) continue;
@@ -151,7 +264,7 @@ function parseLegacy(rows: Cell[][]): ParsedData {
 			is_religional: false,
 			address: toStr(row[9]),
 			coords,
-			buildings: null,
+			buildings: 1,
 			renovated: false,
 			needs_repairs: false,
 			critical_condition: false,
@@ -203,7 +316,7 @@ function parseFlat(rows: Cell[][]): ParsedData {
 	for (let i = 1; i < rows.length; i++) {
 		const row = rows[i]!;
 		const name = toStr(cell(row, schoolIdx));
-		const districtName = toStr(cell(row, districtIdx));
+		const districtName = normalizeDistrictName(toStr(cell(row, districtIdx)));
 
 		const lat = toFloat(cell(row, latIdx));
 		const lon = toFloat(cell(row, lonIdx));
@@ -225,9 +338,9 @@ function parseFlat(rows: Cell[][]): ParsedData {
 			is_religional: toBool(cell(row, religionalIdx)),
 			address: toStr(cell(row, addressIdx)),
 			coords,
-			buildings: toInt(cell(row, buildingsIdx)),
-			renovated: toBool(cell(row, renovatedIdx)),
-			needs_repairs: toBool(cell(row, needsRepairsIdx)),
+			buildings: buildingsCount(cell(row, buildingsIdx)),
+			renovated: toBoolByPresence(cell(row, renovatedIdx)),
+			needs_repairs: toBoolByPresence(cell(row, needsRepairsIdx)),
 			critical_condition: toBool(cell(row, criticalIdx)),
 			second_shift_students: toInt(cell(row, secondShiftIdx)),
 			form: toBool(cell(row, formIdx)),

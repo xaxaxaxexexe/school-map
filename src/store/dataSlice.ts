@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { District, School } from "@/types";
+import { normalizeParsedData } from "@/lib/excelParser";
 
 const STORAGE_KEY = "schools_data_cache";
 
@@ -16,7 +17,7 @@ function loadFromStorage(): {
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
 		if (!raw) return null;
-		return JSON.parse(raw);
+		return normalizeParsedData(JSON.parse(raw));
 	} catch {
 		return null;
 	}

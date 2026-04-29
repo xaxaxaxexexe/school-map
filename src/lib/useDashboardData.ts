@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { DISTRICT_GEO } from "@/data/districts";
 import type { District, School } from "@/types";
+import { schoolBuildingsCount } from "@/lib/format";
 
 export interface DistrictRow {
 	district: District;
@@ -80,17 +81,17 @@ export function useDashboardData() {
 					0,
 				);
 				const buildings = schools.reduce(
-					(sum, school) => sum + (school.buildings ?? 0),
+					(sum, school) => sum + schoolBuildingsCount(school),
 					0,
 				);
 				const repairBuildings = schools.reduce(
 					(sum, school) =>
-						sum + (school.needs_repairs ? (school.buildings ?? 0) : 0),
+						sum + (school.needs_repairs ? schoolBuildingsCount(school) : 0),
 					0,
 				);
 				const criticalBuildings = schools.reduce(
 					(sum, school) =>
-						sum + (school.critical_condition ? (school.buildings ?? 0) : 0),
+						sum + (school.critical_condition ? schoolBuildingsCount(school) : 0),
 					0,
 				);
 				const secondShiftStudents = schools.reduce(
@@ -272,7 +273,7 @@ export function useDashboardData() {
 				case "teachers":
 					return s.teachers ?? 0;
 				case "buildings":
-					return s.buildings ?? 0;
+					return schoolBuildingsCount(s);
 				case "needs_repairs":
 					return s.needs_repairs ? 1 : 0;
 				case "critical_condition":
