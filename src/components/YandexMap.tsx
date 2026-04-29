@@ -56,7 +56,6 @@ const ICON_RED = schoolIcon("#ef4444");
 function compactSchoolSummary(school: School) {
 	const line1 = [
 		`Гос.: ${yesNo(school.is_state)}`,
-		`Религ.: ${yesNo(school.is_religional)}`,
 		`Необъект.: ${yesNo(school.a_school_with_bias)}`,
 	].join(" · ");
 

@@ -171,7 +171,7 @@ export function DashboardPage() {
 									label="Потребность"
 									value={Math.max(
 										0,
-										(selected.district.students ?? 0) - selected.totalCapacity,
+										selected.studentsWithCapacity - selected.totalCapacity,
 									).toLocaleString("ru")}
 									accent="#ef4444"
 								/>
@@ -255,8 +255,18 @@ export function DashboardPage() {
 					onClick={() => window.location.reload()}
 					className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 shadow-sm dark:shadow-neutral-900/30 transition hover:bg-neutral-50 dark:hover:bg-neutral-700 active:scale-95 sm:text-sm"
 				>
-					<svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5M20 20v-5h-5M5 13a7 7 0 0112.9-3.7M19 11a7 7 0 01-12.9 3.7" />
+					<svg
+						className="h-3.5 w-3.5"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M4 4v5h5M20 20v-5h-5M5 13a7 7 0 0112.9-3.7M19 11a7 7 0 01-12.9 3.7"
+						/>
 					</svg>
 				</button>
 				<ThemeToggle />
@@ -447,12 +457,12 @@ export function DashboardPage() {
 															</p>
 														</div>
 													</div>
-													{students > r.totalCapacity && (
+													{r.studentsWithCapacity > r.totalCapacity && (
 														<p className="mt-2 text-center text-xs font-semibold text-rose-500">
 															Дефицит:{" "}
-															{(students - r.totalCapacity).toLocaleString(
-																"ru",
-															)}{" "}
+															{(
+																r.studentsWithCapacity - r.totalCapacity
+															).toLocaleString("ru")}{" "}
 															мест
 														</p>
 													)}

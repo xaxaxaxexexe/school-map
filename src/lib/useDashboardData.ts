@@ -10,6 +10,7 @@ export interface DistrictRow {
 	color: string;
 	schoolCount: number;
 	totalCapacity: number;
+	studentsWithCapacity: number;
 	fillRate: number;
 	schools: School[];
 	buildings: number;
@@ -80,6 +81,11 @@ export function useDashboardData() {
 					(s, x) => s + (x.capacity ?? 0),
 					0,
 				);
+				const studentsWithCapacity = schools.reduce(
+					(sum, school) =>
+						school.capacity != null ? sum + (school.students ?? 0) : sum,
+					0,
+				);
 				const buildings = schools.reduce(
 					(sum, school) => sum + schoolBuildingsCount(school),
 					0,
@@ -111,15 +117,15 @@ export function useDashboardData() {
 					(sum, school) => sum + (school.form ? (school.capacity ?? 0) : 0),
 					0,
 				);
-				const students = district.students ?? 0;
 				const fillRate =
-					totalCapacity > 0 ? (students / totalCapacity) * 100 : 0;
+					totalCapacity > 0 ? (studentsWithCapacity / totalCapacity) * 100 : 0;
 				return {
 					district,
 					shortName: geo?.shortName ?? district.name,
 					color: geo?.color ?? "#3b82f6",
 					schoolCount: schools.length,
 					totalCapacity,
+					studentsWithCapacity,
 					fillRate,
 					schools,
 					buildings,
@@ -203,6 +209,10 @@ export function useDashboardData() {
 
 	const totals = useMemo<DashboardTotals>(() => {
 		const students = rows.reduce((s, r) => s + (r.district.students ?? 0), 0);
+		const studentsWithCapacity = rows.reduce(
+			(s, r) => s + r.studentsWithCapacity,
+			0,
+		);
 		const capacity = rows.reduce((s, r) => s + r.totalCapacity, 0);
 		const teachers = rows.reduce((s, r) => s + (r.district.teachers ?? 0), 0);
 		const workers = rows.reduce((s, r) => s + (r.district.workers ?? 0), 0);
@@ -218,8 +228,9 @@ export function useDashboardData() {
 		const repairCapacity = rows.reduce((s, r) => s + r.repairCapacity, 0);
 		const formSchools = rows.reduce((s, r) => s + r.formSchools, 0);
 		const formCapacity = rows.reduce((s, r) => s + r.formCapacity, 0);
-		const fillRate = capacity > 0 ? (students / capacity) * 100 : 0;
-		const demand = Math.max(0, students - capacity);
+		const fillRate =
+			capacity > 0 ? (studentsWithCapacity / capacity) * 100 : 0;
+		const demand = Math.max(0, studentsWithCapacity - capacity);
 		return {
 			students,
 			capacity,

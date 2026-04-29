@@ -115,14 +115,6 @@ export const DISTRICT_GEO: Record<string, DistrictGeo> = {
 		borderKeyword: "наурск",
 		color: "#16a085",
 	},
-	"Ахматовский р-н": {
-		id: 14,
-		shortName: "Ахматовский р-н",
-		center: [43.318, 45.692],
-		zoom: 10,
-		borderKeyword: "ахматовск",
-		color: "#e17055",
-	},
 	"Курчалоевский р-н": {
 		id: 15,
 		shortName: "Курчалоевский р-н",
@@ -130,22 +122,6 @@ export const DISTRICT_GEO: Record<string, DistrictGeo> = {
 		zoom: 10,
 		borderKeyword: "курчалоевск",
 		color: "#6c5ce7",
-	},
-	"Висаитовский р-н": {
-		id: 16,
-		shortName: "Висаитовский р-н",
-		center: [43.33, 45.64],
-		zoom: 10,
-		borderKeyword: "висаитовск",
-		color: "#00cec9",
-	},
-	"Шейх-Мансуровский р-н": {
-		id: 17,
-		shortName: "Шейх-Мансуровский р-н",
-		center: [43.31, 45.72],
-		zoom: 10,
-		borderKeyword: "мансуровск",
-		color: "#fd79a8",
 	},
 	"Ачхой-Мартановский р-н": {
 		id: 19,
@@ -170,14 +146,6 @@ export const DISTRICT_GEO: Record<string, DistrictGeo> = {
 		zoom: 10,
 		borderKeyword: "шелковск",
 		color: "#fdcb6e",
-	},
-	"Байсангуровский р-н": {
-		id: 21,
-		shortName: "Байсангуровский р-н",
-		center: [43.3, 45.72],
-		zoom: 11,
-		borderKeyword: "байсангуровск",
-		color: "#0984e3",
 	},
 };
 

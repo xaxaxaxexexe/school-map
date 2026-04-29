@@ -406,11 +406,6 @@ function SchoolDetail({
 				</h2>
 				<div className="mt-2.5 flex flex-wrap gap-2">
 					<StatusBadge label="Гос." value={school.is_state} tone="positive" />
-					<StatusBadge
-						label="Религ."
-						value={school.is_religional}
-						tone="positive"
-					/>
 				</div>
 			</div>
 			<div className="flex-1 overflow-y-auto px-5 py-4">

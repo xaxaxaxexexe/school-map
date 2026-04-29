@@ -123,7 +123,7 @@ function normalizeHeader(v: Cell): string {
 	if (!s) return "";
 	return s
 		.toLowerCase()
-		.replace(/[^0-9a-zа-я]+/g, "_")
+		.replace(/[^0-9a-zа-яё]+/g, "_")
 		.replace(/^_|_$/g, "");
 }
 
@@ -281,34 +281,97 @@ function parseLegacy(rows: Cell[][]): ParsedData {
 function parseFlat(rows: Cell[][]): ParsedData {
 	const header = rows[0]!;
 
-	const schoolIdx = headerIndex(header, "school_name", 1);
-	const shiftIdx = headerIndex(header, "shift_count", 2);
-	const capacityIdx = headerIndex(header, "power", 3);
-	const studentsIdx = headerIndex(header, "student_count", 4);
-	const workersIdx = headerIndex(header, "employee_count", 5);
-	const teachersIdx = headerIndex(header, "edu_employee_count", 6);
-	const siteIdx = headerIndex(header, "page_link", 7);
-	const latIdx = headerIndex(header, "latitude", 8);
-	const lonIdx = headerIndex(header, "longitude", 9);
-	const addressIdx = headerIndex(header, "adress", "address", 10);
-	const districtIdx = headerIndex(header, "district", 11);
-	const stateIdx = headerIndex(header, "is_state", 12);
-	const religionalIdx = headerIndex(header, "is_religional", 13);
-	const buildingsIdx = headerIndex(header, "buildings");
-	const renovatedIdx = headerIndex(header, "renovated");
-	const needsRepairsIdx = headerIndex(header, "needs_repairs");
-	const criticalIdx = headerIndex(header, "critical_condition");
+	const schoolIdx = headerIndex(header, "school_name", "Название школы", 1);
+	const shiftIdx = headerIndex(header, "shift_count", "Сменность", "Смена", 2);
+	const capacityIdx = headerIndex(header, "power", "Мощность", 3);
+	const studentsIdx = headerIndex(
+		header,
+		"student_count",
+		"Количество обучающихся",
+		"Кол-во учащихся",
+		4,
+	);
+	const workersIdx = headerIndex(
+		header,
+		"employee_count",
+		"Количество работников",
+		"Кол-во работников",
+		5,
+	);
+	const teachersIdx = headerIndex(
+		header,
+		"edu_employee_count",
+		"Количество педработников",
+		"Количество учителей",
+		"Кол-во учителей",
+		6,
+	);
+	const siteIdx = headerIndex(
+		header,
+		"page_link",
+		"Ссылка на сайт",
+		"Сайт школы",
+		7,
+	);
+	const latIdx = headerIndex(header, "latitude", "Широта", 8);
+	const lonIdx = headerIndex(header, "longitude", "Долгота", 9);
+	const addressIdx = headerIndex(header, "adress", "address", "Адрес", 10);
+	const districtIdx = headerIndex(
+		header,
+		"district",
+		"Район",
+		"Район/Департамент",
+		11,
+	);
+	const stateIdx = headerIndex(header, "is_state", "Государственная", 12);
+	const religionalIdx = headerIndex(
+		header,
+		"is_religional",
+		"Религиозная",
+		13,
+	);
+	const buildingsIdx = headerIndex(
+		header,
+		"buildings",
+		"Инфраструктура (количество зданий)",
+		"Количество зданий",
+		"Кол-во зданий",
+		14,
+	);
+	const renovatedIdx = headerIndex(
+		header,
+		"renovated",
+		"Отремонтирована",
+		15,
+	);
+	const needsRepairsIdx = headerIndex(
+		header,
+		"needs_repairs",
+		"Требует ремонта",
+		16,
+	);
+	const criticalIdx = headerIndex(
+		header,
+		"critical_condition",
+		"Аварийное состояние",
+		17,
+	);
 	const secondShiftIdx = headerIndex(
 		header,
 		"second_shift(students)",
 		"second_shift_students",
+		"Обуч. во 2 смену",
+		"Обучающихся во 2 смену",
+		18,
 	);
-	const formIdx = headerIndex(header, "form");
-	const shkonIdx = headerIndex(header, "SHKON", "shkon");
+	const formIdx = headerIndex(header, "form", "Строится", 19);
+	const shkonIdx = headerIndex(header, "SHKON", "shkon", "ШНОР", 20);
 	const biasIdx = headerIndex(
 		header,
 		"A_school_with_bias",
 		"a_school_with_bias",
+		"Школа с необъективностью",
+		21,
 	);
 
 	const schools: School[] = [];
