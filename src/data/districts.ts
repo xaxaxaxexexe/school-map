@@ -154,6 +154,18 @@ export const DISTRICT_ID_MAP: Record<string, number> = Object.fromEntries(
 );
 
 const DEFAULT_COLOR = "#3b82f6";
+const MONITORING_RED = "#ef4444";
+const MONITORING_YELLOW = "#f59e0b";
+const MONITORING_GREEN = "#10b981";
+
+export function getMonitoringScoreColor(
+	score: number | null | undefined,
+): string {
+	if (score == null) return DEFAULT_COLOR;
+	if (score < 85) return MONITORING_RED;
+	if (score <= 86.1) return MONITORING_YELLOW;
+	return MONITORING_GREEN;
+}
 
 function findGeoByBorderName(borderName: string): DistrictGeo | null {
 	const lower = borderName.toLowerCase();
@@ -163,8 +175,20 @@ function findGeoByBorderName(borderName: string): DistrictGeo | null {
 	return null;
 }
 
-export function getDistrictColor(borderName: string): string {
-	return findGeoByBorderName(borderName)?.color ?? DEFAULT_COLOR;
+export function getDistrictColor(
+	borderName: string,
+	districts?: {
+		id: number | null;
+		name: string;
+		monitoring_score?: number | null;
+	}[],
+): string {
+	const geo = findGeoByBorderName(borderName);
+	if (!geo) return DEFAULT_COLOR;
+	const district = districts?.find((d) => d.id === geo.id);
+	return district
+		? getMonitoringScoreColor(district.monitoring_score)
+		: geo.color;
 }
 
 export function matchBorderToDistrictId(

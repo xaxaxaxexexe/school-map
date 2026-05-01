@@ -59,6 +59,15 @@ function toFloat(v: Cell): number | null {
 	return Number.isFinite(n) ? n : null;
 }
 
+function ratioOrNull(
+	numerator: number | null,
+	denominator: number | null,
+): number | null {
+	if (numerator == null || denominator == null || denominator === 0)
+		return null;
+	return numerator / denominator;
+}
+
 function toStr(v: Cell): string | null {
 	if (isNan(v)) return null;
 	const s = String(v).trim();
@@ -84,6 +93,37 @@ function normalizeDistrictName(v: string | null): string | null {
 	}
 
 	return name;
+}
+
+function normalizeDepartmentDistrictName(v: string | null): string | null {
+	if (!v) return null;
+	const normalized = v
+		.toLowerCase()
+		.replace(/ё/g, "е")
+		.replace(/\s+/g, " ")
+		.trim();
+
+	if (normalized.includes("аргун")) return "Аргун (город)";
+	if (normalized.includes("мэрии г.грозного")) return CANONICAL_GROZNY_DISTRICT;
+	if (normalized.includes("мэрии г. грозного"))
+		return CANONICAL_GROZNY_DISTRICT;
+	if (normalized.includes("грозненск")) return "Грозненский р-н";
+	if (normalized.includes("итум-калин")) return "Итум-Калинский р-н";
+	if (normalized.includes("веден")) return "Веденский р-н";
+	if (normalized.includes("надтереч")) return "Надтеречный р-н";
+	if (normalized.includes("серновод")) return "Серноводский р-н";
+	if (normalized.includes("шалин")) return "Шалинский р-н";
+	if (normalized.includes("шатой")) return "Шатойский р-н";
+	if (normalized.includes("шарой")) return "Шаройский р-н";
+	if (normalized.includes("урус-мартан")) return "Урус-Мартановский р-н";
+	if (normalized.includes("гудермес")) return "Гудермесский р-н";
+	if (normalized.includes("наурск")) return "Наурский р-н";
+	if (normalized.includes("ачхой")) return "Ачхой-Мартановский р-н";
+	if (normalized.includes("курчалоев")) return "Курчалоевский р-н";
+	if (normalized.includes("ножай-юртов")) return "Ножай-Юртовский р-н";
+	if (normalized.includes("шелков")) return "Шелковской р-н";
+
+	return normalizeDistrictName(v);
 }
 
 function toBoolByPresence(v: Cell): boolean {
@@ -176,6 +216,7 @@ function buildPayload(districts: District[], schools: School[]): ParsedData {
 				students: d.students ?? 0,
 				teachers: d.teachers ?? 0,
 				workers: d.workers ?? 0,
+				monitoring_score: d.monitoring_score ?? null,
 			});
 			continue;
 		}
@@ -183,6 +224,8 @@ function buildPayload(districts: District[], schools: School[]): ParsedData {
 		current.students = (current.students ?? 0) + (d.students ?? 0);
 		current.teachers = (current.teachers ?? 0) + (d.teachers ?? 0);
 		current.workers = (current.workers ?? 0) + (d.workers ?? 0);
+		current.monitoring_score =
+			d.monitoring_score ?? current.monitoring_score ?? null;
 	}
 
 	for (const [name, id] of Object.entries(DISTRICT_ID_MAP)) {
@@ -194,7 +237,14 @@ function buildPayload(districts: District[], schools: School[]): ParsedData {
 			if (cur.id === null) cur.id = id;
 			continue;
 		}
-		byName.set(name, { id, name, students: 0, teachers: 0, workers: 0 });
+		byName.set(name, {
+			id,
+			name,
+			students: 0,
+			teachers: 0,
+			workers: 0,
+			monitoring_score: null,
+		});
 	}
 
 	const merged = [...byName.values()].sort(
@@ -211,10 +261,22 @@ export function normalizeParsedData(data: ParsedData): ParsedData {
 		...school,
 		district: normalizeDistrictName(school.district),
 		buildings: school.buildings ?? 1,
+		primary_students: school.primary_students ?? null,
+		middle_students: school.middle_students ?? null,
+		ninth_grade_students: school.ninth_grade_students ?? null,
+		tenth_grade_students: school.tenth_grade_students ?? null,
+		eleventh_grade_students: school.eleventh_grade_students ?? null,
+		ege_stem_share: school.ege_stem_share ?? null,
+		students_per_worker: school.students_per_worker ?? null,
+		admin_staff: school.admin_staff ?? null,
+		admin_staff_share: school.admin_staff_share ?? null,
+		other_staff: school.other_staff ?? null,
+		other_staff_share: school.other_staff_share ?? null,
 	}));
 	const districts = data.districts.map((district) => ({
 		...district,
 		name: normalizeDistrictName(district.name) ?? district.name,
+		monitoring_score: district.monitoring_score ?? null,
 	}));
 
 	return buildPayload(districts, schools);
@@ -234,11 +296,12 @@ function parseLegacy(rows: Cell[][]): ParsedData {
 		if (isNan(rowId) && isDistrictRow(name, toStr(row[7]))) {
 			const districtName = normalizeDistrictName(nameStripped);
 			currentDistrict = {
-				id: districtName ? DISTRICT_ID_MAP[districtName] ?? null : null,
+				id: districtName ? (DISTRICT_ID_MAP[districtName] ?? null) : null,
 				name: districtName ?? nameStripped!,
 				students: toInt(row[4]),
 				workers: toInt(row[5]),
 				teachers: toInt(row[6]),
+				monitoring_score: null,
 			};
 			districts.push(currentDistrict);
 			continue;
@@ -256,8 +319,19 @@ function parseLegacy(rows: Cell[][]): ParsedData {
 			shift: toInt(row[2]),
 			capacity: toInt(row[3]),
 			students: toInt(row[4]),
+			primary_students: null,
+			middle_students: null,
+			ninth_grade_students: null,
+			tenth_grade_students: null,
+			eleventh_grade_students: null,
+			ege_stem_share: null,
 			workers: toInt(row[5]),
+			students_per_worker: null,
+			admin_staff: null,
+			admin_staff_share: null,
 			teachers: toInt(row[6]),
+			other_staff: null,
+			other_staff_share: null,
 			site: toStr(row[7]),
 			district: districtName,
 			is_state: toBool(row[8]),
@@ -291,6 +365,15 @@ function parseFlat(rows: Cell[][]): ParsedData {
 		"Кол-во учащихся",
 		4,
 	);
+	const primaryStudentsIdx = headerIndex(header, "1-4 классы");
+	const middleStudentsIdx = headerIndex(header, "5-8 классы");
+	const ninthGradeStudentsIdx = headerIndex(header, "9 класс");
+	const tenthGradeStudentsIdx = headerIndex(header, "10 класс");
+	const eleventhGradeStudentsIdx = headerIndex(header, "11 класс");
+	const egeStemShareIdx = headerIndex(
+		header,
+		"Доля выпускников, выбравших на ЕГЭ естественно-научные предметы (химия, физика и биология), профильную математику и информатику в 2026 г.",
+	);
 	const workersIdx = headerIndex(
 		header,
 		"employee_count",
@@ -298,6 +381,12 @@ function parseFlat(rows: Cell[][]): ParsedData {
 		"Кол-во работников",
 		5,
 	);
+	const studentsPerWorkerIdx = headerIndex(
+		header,
+		"численность обучающихся на 1 работника",
+	);
+	const adminStaffIdx = headerIndex(header, "количество АУП");
+	const adminStaffShareIdx = headerIndex(header, "Доля АУП");
 	const teachersIdx = headerIndex(
 		header,
 		"edu_employee_count",
@@ -306,6 +395,8 @@ function parseFlat(rows: Cell[][]): ParsedData {
 		"Кол-во учителей",
 		6,
 	);
+	const otherStaffIdx = headerIndex(header, "Количество иных работников");
+	const otherStaffShareIdx = headerIndex(header, "Доля иных работников");
 	const siteIdx = headerIndex(
 		header,
 		"page_link",
@@ -323,13 +414,8 @@ function parseFlat(rows: Cell[][]): ParsedData {
 		"Район/Департамент",
 		11,
 	);
-	const stateIdx = headerIndex(header, "is_state", "Государственная", 12);
-	const religionalIdx = headerIndex(
-		header,
-		"is_religional",
-		"Религиозная",
-		13,
-	);
+	const stateIdx = headerIndex(header, "is_state", "Государственная");
+	const religionalIdx = headerIndex(header, "is_religional", "Религиозная");
 	const buildingsIdx = headerIndex(
 		header,
 		"buildings",
@@ -342,18 +428,21 @@ function parseFlat(rows: Cell[][]): ParsedData {
 		header,
 		"renovated",
 		"Отремонтирована",
+		"Проведен капитальный ремонт",
 		15,
 	);
 	const needsRepairsIdx = headerIndex(
 		header,
 		"needs_repairs",
 		"Требует ремонта",
+		"Требуется кап.ремонт",
 		16,
 	);
 	const criticalIdx = headerIndex(
 		header,
 		"critical_condition",
 		"Аварийное состояние",
+		"В аварийном состоянии",
 		17,
 	);
 	const secondShiftIdx = headerIndex(
@@ -362,9 +451,8 @@ function parseFlat(rows: Cell[][]): ParsedData {
 		"second_shift_students",
 		"Обуч. во 2 смену",
 		"Обучающихся во 2 смену",
-		18,
 	);
-	const formIdx = headerIndex(header, "form", "Строится", 19);
+	const formIdx = headerIndex(header, "form", "Строится");
 	const shkonIdx = headerIndex(header, "SHKON", "shkon", "ШНОР", 20);
 	const biasIdx = headerIndex(
 		header,
@@ -373,13 +461,28 @@ function parseFlat(rows: Cell[][]): ParsedData {
 		"Школа с необъективностью",
 		21,
 	);
+	const monitoringScoreIdx = headerIndex(
+		header,
+		"Итоговый балл в мотивирующем мониторинге за 2024 г.",
+		"Итоговый балл в мотивирующем мониторинге",
+	);
 
 	const schools: School[] = [];
+	const districtScores = new Map<string, number>();
 
 	for (let i = 1; i < rows.length; i++) {
 		const row = rows[i]!;
 		const name = toStr(cell(row, schoolIdx));
 		const districtName = normalizeDistrictName(toStr(cell(row, districtIdx)));
+		const site = toStr(cell(row, siteIdx));
+		const monitoringScore = toFloat(cell(row, monitoringScoreIdx));
+
+		if (!site && monitoringScore !== null) {
+			const scoreDistrictName = normalizeDepartmentDistrictName(name);
+			if (scoreDistrictName && scoreDistrictName in DISTRICT_ID_MAP) {
+				districtScores.set(scoreDistrictName, monitoringScore);
+			}
+		}
 
 		const lat = toFloat(cell(row, latIdx));
 		const lon = toFloat(cell(row, lonIdx));
@@ -388,14 +491,39 @@ function parseFlat(rows: Cell[][]): ParsedData {
 
 		if (!districtName && coords === null) continue;
 
+		const students = toInt(cell(row, studentsIdx));
+		const workers = toInt(cell(row, workersIdx));
+		const adminStaff = toInt(cell(row, adminStaffIdx));
+		const otherStaff = toInt(cell(row, otherStaffIdx));
+		const studentsPerWorker =
+			toFloat(cell(row, studentsPerWorkerIdx)) ??
+			ratioOrNull(students, workers);
+		const adminStaffShare =
+			toFloat(cell(row, adminStaffShareIdx)) ??
+			ratioOrNull(adminStaff, workers);
+		const otherStaffShare =
+			toFloat(cell(row, otherStaffShareIdx)) ??
+			ratioOrNull(otherStaff, workers);
+
 		schools.push({
 			name: name ?? "",
 			shift: toInt(cell(row, shiftIdx)),
 			capacity: toInt(cell(row, capacityIdx)),
-			students: toInt(cell(row, studentsIdx)),
-			workers: toInt(cell(row, workersIdx)),
+			students,
+			primary_students: toInt(cell(row, primaryStudentsIdx)),
+			middle_students: toInt(cell(row, middleStudentsIdx)),
+			ninth_grade_students: toInt(cell(row, ninthGradeStudentsIdx)),
+			tenth_grade_students: toInt(cell(row, tenthGradeStudentsIdx)),
+			eleventh_grade_students: toInt(cell(row, eleventhGradeStudentsIdx)),
+			ege_stem_share: toFloat(cell(row, egeStemShareIdx)),
+			workers,
+			students_per_worker: studentsPerWorker,
+			admin_staff: adminStaff,
+			admin_staff_share: adminStaffShare,
 			teachers: toInt(cell(row, teachersIdx)),
-			site: toStr(cell(row, siteIdx)),
+			other_staff: otherStaff,
+			other_staff_share: otherStaffShare,
+			site,
 			district: districtName,
 			is_state: toBool(cell(row, stateIdx)),
 			is_religional: toBool(cell(row, religionalIdx)),
@@ -424,12 +552,15 @@ function parseFlat(rows: Cell[][]): ParsedData {
 				students: 0,
 				workers: 0,
 				teachers: 0,
+				monitoring_score: districtScores.get(school.district) ?? null,
 			};
 			districtsMap.set(school.district, d);
 		}
 		d.students = (d.students ?? 0) + (school.students ?? 0);
 		d.workers = (d.workers ?? 0) + (school.workers ?? 0);
 		d.teachers = (d.teachers ?? 0) + (school.teachers ?? 0);
+		d.monitoring_score =
+			districtScores.get(school.district) ?? d.monitoring_score ?? null;
 	}
 
 	return buildPayload([...districtsMap.values()], schools);

@@ -3,6 +3,8 @@ import type { School } from "@/types";
 import type { SortState } from "@/lib/useDashboardData";
 import {
 	fmt,
+	fmtDecimal,
+	fmtPercent,
 	fmtSecondShiftStudents,
 	schoolBuildingsCount,
 	siteUrl,
@@ -53,6 +55,36 @@ const COLUMNS: Column[] = [
 		render: (s) => <td className={TD}>{fmt(s.students)}</td>,
 	},
 	{
+		label: "1-4 кл.",
+		sortKey: "primary_students",
+		render: (s) => <td className={TD}>{fmt(s.primary_students)}</td>,
+	},
+	{
+		label: "5-8 кл.",
+		sortKey: "middle_students",
+		render: (s) => <td className={TD}>{fmt(s.middle_students)}</td>,
+	},
+	{
+		label: "9 кл.",
+		sortKey: "ninth_grade_students",
+		render: (s) => <td className={TD}>{fmt(s.ninth_grade_students)}</td>,
+	},
+	{
+		label: "10 кл.",
+		sortKey: "tenth_grade_students",
+		render: (s) => <td className={TD}>{fmt(s.tenth_grade_students)}</td>,
+	},
+	{
+		label: "11 кл.",
+		sortKey: "eleventh_grade_students",
+		render: (s) => <td className={TD}>{fmt(s.eleventh_grade_students)}</td>,
+	},
+	{
+		label: "ЕГЭ хим/физ/био/мат/ИКТ",
+		sortKey: "ege_stem_share",
+		render: (s) => <td className={TD}>{fmtPercent(s.ege_stem_share)}</td>,
+	},
+	{
 		label: "Обуч. во 2 смену",
 		sortKey: "second_shift_students",
 		render: (s) => <td className={TD}>{fmtSecondShiftStudents(s)}</td>,
@@ -63,9 +95,34 @@ const COLUMNS: Column[] = [
 		render: (s) => <td className={TD}>{fmt(s.workers)}</td>,
 	},
 	{
+		label: "Уч. / работника",
+		sortKey: "students_per_worker",
+		render: (s) => <td className={TD}>{fmtDecimal(s.students_per_worker)}</td>,
+	},
+	{
+		label: "АУП",
+		sortKey: "admin_staff",
+		render: (s) => <td className={TD}>{fmt(s.admin_staff)}</td>,
+	},
+	{
+		label: "Доля АУП",
+		sortKey: "admin_staff_share",
+		render: (s) => <td className={TD}>{fmtPercent(s.admin_staff_share)}</td>,
+	},
+	{
 		label: "Педагогов",
 		sortKey: "teachers",
 		render: (s) => <td className={TD}>{fmt(s.teachers)}</td>,
+	},
+	{
+		label: "Иных работников",
+		sortKey: "other_staff",
+		render: (s) => <td className={TD}>{fmt(s.other_staff)}</td>,
+	},
+	{
+		label: "Доля иных",
+		sortKey: "other_staff_share",
+		render: (s) => <td className={TD}>{fmtPercent(s.other_staff_share)}</td>,
 	},
 	{
 		label: "Сайт",
@@ -79,6 +136,7 @@ const COLUMNS: Column[] = [
 							href={url}
 							target="_blank"
 							rel="noopener noreferrer"
+							onClick={(e) => e.stopPropagation()}
 							className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
 						>
 							{s.site}
@@ -179,9 +237,19 @@ interface SchoolTableProps {
 	schools: School[];
 	sort: SortState<string>;
 	onToggleSort: (key: string) => void;
+	selectedSchoolName?: string | null;
+	onSelectSchool?: (school: School) => void;
 }
 
-function MobileSchoolCards({ schools }: { schools: School[] }) {
+function MobileSchoolCards({
+	schools,
+	selectedSchoolName,
+	onSelectSchool,
+}: {
+	schools: School[];
+	selectedSchoolName?: string | null;
+	onSelectSchool?: (school: School) => void;
+}) {
 	const [openIdx, setOpenIdx] = useState<number | null>(null);
 
 	return (
@@ -199,8 +267,15 @@ function MobileSchoolCards({ schools }: { schools: School[] }) {
 						}
 					>
 						<button
-							onClick={() => setOpenIdx(isOpen ? null : i)}
-							className="flex w-full cursor-pointer gap-3 px-4 py-3.5 text-left transition active:bg-blue-50 dark:active:bg-blue-900/30"
+							onClick={() => {
+								onSelectSchool?.(s);
+								setOpenIdx(isOpen ? null : i);
+							}}
+							className={`flex w-full cursor-pointer gap-3 px-4 py-3.5 text-left transition active:bg-blue-50 dark:active:bg-blue-900/30 ${
+								selectedSchoolName === s.name
+									? "bg-blue-50 dark:bg-blue-900/30"
+									: ""
+							}`}
 						>
 							<div className="flex shrink-0 flex-col items-center gap-1 pt-0.5">
 								<span className="text-xs font-medium text-neutral-400 dark:text-neutral-500">
@@ -327,6 +402,7 @@ function MobileSchoolCards({ schools }: { schools: School[] }) {
 										href={siteUrl(s.site)!}
 										target="_blank"
 										rel="noopener noreferrer"
+										onClick={(e) => e.stopPropagation()}
 										className="mt-1 block text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
 									>
 										{s.site}
@@ -341,10 +417,20 @@ function MobileSchoolCards({ schools }: { schools: School[] }) {
 	);
 }
 
-export function SchoolTable({ schools, sort, onToggleSort }: SchoolTableProps) {
+export function SchoolTable({
+	schools,
+	sort,
+	onToggleSort,
+	selectedSchoolName,
+	onSelectSchool,
+}: SchoolTableProps) {
 	return (
 		<>
-			<MobileSchoolCards schools={schools} />
+			<MobileSchoolCards
+				schools={schools}
+				selectedSchoolName={selectedSchoolName}
+				onSelectSchool={onSelectSchool}
+			/>
 			<table className="hidden w-full border-collapse text-[13px] md:table">
 				<thead className="sticky top-0 z-10">
 					<tr className="bg-[#1e3a5f] text-white">
@@ -382,7 +468,14 @@ export function SchoolTable({ schools, sort, onToggleSort }: SchoolTableProps) {
 						return (
 							<tr
 								key={i}
-								className={`border-b border-neutral-100 dark:border-neutral-700 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 ${i % 2 === 0 ? "bg-white dark:bg-neutral-800" : "bg-neutral-50/50 dark:bg-neutral-800/50"}`}
+								onClick={() => onSelectSchool?.(s)}
+								className={`cursor-pointer border-b border-neutral-100 dark:border-neutral-700 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 ${
+									selectedSchoolName === s.name
+										? "bg-blue-50 dark:bg-blue-900/30"
+										: i % 2 === 0
+											? "bg-white dark:bg-neutral-800"
+											: "bg-neutral-50/50 dark:bg-neutral-800/50"
+								}`}
 							>
 								<td className="py-4 pl-5 pr-3 font-medium text-neutral-400 dark:text-neutral-500">
 									{i + 1}

@@ -1,7 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDashboardData } from "@/lib/useDashboardData";
-import { schoolWord } from "@/lib/format";
+import type { District, School } from "@/types";
+import {
+	fmt,
+	fmtDecimal,
+	fmtPercent,
+	fmtSecondShiftStudents,
+	schoolBuildingsCount,
+	schoolWord,
+	siteUrl,
+	yesNo,
+} from "@/lib/format";
+import { getMonitoringScoreColor } from "@/data/districts";
 import { SortArrow } from "@/components/ui/SortArrow";
 import { FillBar } from "@/components/ui/FillBar";
 import { BigStat } from "@/components/ui/BigStat";
@@ -10,6 +21,259 @@ import { TabBtn } from "@/components/ui/TabBtn";
 import { SchoolTable } from "@/components/dashboard/SchoolTable";
 import { ChechenGrid } from "@/components/dashboard/ChechenGrid";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+
+function InfoItem({
+	label,
+	value,
+}: {
+	label: string;
+	value: string | number | null;
+}) {
+	return (
+		<div className="rounded-xl bg-neutral-50 dark:bg-neutral-900 px-3 py-2.5">
+			<p className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500">
+				{label}
+			</p>
+			<p className="mt-0.5 break-words text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+				{value ?? "—"}
+			</p>
+		</div>
+	);
+}
+
+function monitoringTitle(score: number | null): string {
+	if (score == null) return "Балл мониторинга не указан";
+	return `Балл мониторинга: ${fmtDecimal(score)}`;
+}
+
+function DistrictSummaryPanel({ selected }: { selected: any }) {
+	const score = selected.district.monitoring_score;
+	return (
+		<>
+			<h3 className="text-sm font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+				{selected.shortName}
+			</h3>
+			<div className="grid grid-cols-2 gap-3">
+				{score != null ? (
+					<>
+						<BigStat
+							label="Балл мониторинга"
+							value={fmtDecimal(score)}
+							accent={getMonitoringScoreColor(score)}
+						/>
+						<BigStat
+							label="Заполненность"
+							value={`${selected.fillRate.toFixed(1)}%`}
+							accent={selected.fillRate > 100 ? "#ef4444" : "#10b981"}
+						/>
+					</>
+				) : (
+					<div className="col-span-2">
+						<BigStat
+							label="Уровень заполненности школ"
+							value={`${selected.fillRate.toFixed(1)}%`}
+							accent={selected.fillRate > 100 ? "#ef4444" : "#10b981"}
+						/>
+					</div>
+				)}
+				<div className="col-span-2 grid grid-cols-2 gap-3">
+					<BigStat
+						label="Обучающихся"
+						value={(selected.district.students ?? 0).toLocaleString("ru")}
+						accent="#3b82f6"
+					/>
+					<BigStat
+						label="Мощность"
+						value={selected.totalCapacity.toLocaleString("ru")}
+						accent="#8b5cf6"
+					/>
+				</div>
+				<div className="col-span-2 grid grid-cols-2 gap-3">
+					<BigStat
+						label="Педагогов"
+						value={(selected.district.teachers ?? 0).toLocaleString("ru")}
+						accent="#f59e0b"
+					/>
+					<BigStat
+						label="Работников"
+						value={(selected.district.workers ?? 0).toLocaleString("ru")}
+						accent="#3b82f6"
+					/>
+				</div>
+				<div className="col-span-2 grid grid-cols-2 gap-3">
+					<BigStat
+						label="Школ"
+						value={String(selected.schoolCount)}
+						accent="#10b981"
+					/>
+					<BigStat
+						label="Потребность"
+						value={Math.max(
+							0,
+							selected.studentsWithCapacity - selected.totalCapacity,
+						).toLocaleString("ru")}
+						accent="#ef4444"
+					/>
+				</div>
+			</div>
+			<div className="mt-2 hidden lg:block">
+				<Link
+					to={`/map?district=${selected.district.id}`}
+					className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.97]"
+				>
+					<svg
+						className="h-4 w-4"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+						/>
+					</svg>
+					Показать на карте
+				</Link>
+			</div>
+		</>
+	);
+}
+
+function SchoolDetailPanel({
+	school,
+	district,
+	onBack,
+}: {
+	school: School;
+	district: District;
+	onBack: () => void;
+}) {
+	const url = siteUrl(school.site);
+	const coords = school.coords
+		? `${school.coords[0].toFixed(6)}, ${school.coords[1].toFixed(6)}`
+		: null;
+
+	return (
+		<>
+			<button
+				onClick={onBack}
+				className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 active:scale-95"
+			>
+				<svg
+					className="h-4 w-4"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d="M15 19l-7-7 7-7"
+					/>
+				</svg>
+				Сводка района
+			</button>
+			<div>
+				<p className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+					{district.name}
+				</p>
+				<h3 className="mt-1 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+					{school.name}
+				</h3>
+			</div>
+			<div className="grid grid-cols-2 gap-2">
+				<InfoItem label="Мощность" value={fmt(school.capacity)} />
+				<InfoItem label="Обучающихся" value={fmt(school.students)} />
+				<InfoItem label="1-4 классы" value={fmt(school.primary_students)} />
+				<InfoItem label="5-8 классы" value={fmt(school.middle_students)} />
+				<InfoItem label="9 класс" value={fmt(school.ninth_grade_students)} />
+				<InfoItem label="10 класс" value={fmt(school.tenth_grade_students)} />
+				<InfoItem
+					label="11 класс"
+					value={fmt(school.eleventh_grade_students)}
+				/>
+				<InfoItem
+					label="ЕГЭ хим/физ/био/мат/ИКТ"
+					value={fmtPercent(school.ege_stem_share)}
+				/>
+				<InfoItem label="Сменность" value={fmt(school.shift)} />
+				<InfoItem label="Во 2 смену" value={fmtSecondShiftStudents(school)} />
+				<InfoItem label="Работников" value={fmt(school.workers)} />
+				<InfoItem
+					label="Уч. / работника"
+					value={fmtDecimal(school.students_per_worker)}
+				/>
+				<InfoItem label="АУП" value={fmt(school.admin_staff)} />
+				<InfoItem
+					label="Доля АУП"
+					value={fmtPercent(school.admin_staff_share)}
+				/>
+				<InfoItem label="Педработников" value={fmt(school.teachers)} />
+				<InfoItem label="Иных работников" value={fmt(school.other_staff)} />
+				<InfoItem
+					label="Доля иных"
+					value={fmtPercent(school.other_staff_share)}
+				/>
+				<InfoItem
+					label="Зданий"
+					value={schoolBuildingsCount(school).toLocaleString("ru")}
+				/>
+				<InfoItem label="Капремонт проведен" value={yesNo(school.renovated)} />
+				<InfoItem
+					label="Требуется капремонт"
+					value={yesNo(school.needs_repairs)}
+				/>
+				<InfoItem label="Аварийное" value={yesNo(school.critical_condition)} />
+				<InfoItem label="ШНОР" value={yesNo(school.shkon)} />
+				<InfoItem
+					label="Необъективность"
+					value={yesNo(school.a_school_with_bias)}
+				/>
+				<InfoItem label="Государственная" value={yesNo(school.is_state)} />
+				<div className="col-span-2">
+					<InfoItem label="Адрес" value={school.address} />
+				</div>
+				<div className="col-span-2">
+					<InfoItem label="Координаты" value={coords} />
+				</div>
+				{school.coords && district.id != null && (
+					<Link
+						to={`/map?district=${district.id}&school=${encodeURIComponent(school.name)}`}
+						className="col-span-2 hidden items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.97] lg:flex"
+					>
+						<svg
+							className="h-4 w-4"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+							/>
+						</svg>
+						Показать на карте
+					</Link>
+				)}
+				{url && (
+					<a
+						href={url}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="col-span-2 rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-[0.97]"
+					>
+						Открыть сайт школы
+					</a>
+				)}
+			</div>
+		</>
+	);
+}
 
 export function DashboardPage() {
 	const {
@@ -32,6 +296,11 @@ export function DashboardPage() {
 	const [expanded, setExpanded] = useState(false);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
 	const [tab, setTab] = useState<"districts" | "republic">("districts");
+	const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+
+	useEffect(() => {
+		setSelectedSchool(null);
+	}, [selected?.district.id]);
 
 	if (noData) {
 		return (
@@ -120,84 +389,23 @@ export function DashboardPage() {
 									schools={sortedSchools}
 									sort={schoolSort}
 									onToggleSort={toggleSchoolSort}
+									selectedSchoolName={selectedSchool?.name ?? null}
+									onSelectSchool={setSelectedSchool}
 								/>
 							</div>
 						</div>
 					</div>
 
 					<div className="flex w-full shrink-0 flex-col gap-4 border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 lg:h-full lg:w-80 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:p-6">
-						<h3 className="text-sm font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-							{selected.shortName}
-						</h3>
-						<div className="grid grid-cols-2 gap-3 sm:grid-cols-1">
-							<div className="col-span-2 sm:col-span-1">
-								<BigStat
-									label="Уровень заполненности школ"
-									value={`${selected.fillRate.toFixed(1)}%`}
-									accent={selected.fillRate > 100 ? "#ef4444" : "#10b981"}
-								/>
-							</div>
-							<div className="col-span-2 grid grid-cols-2 gap-3">
-								<BigStat
-									label="Обучающихся"
-									value={(selected.district.students ?? 0).toLocaleString("ru")}
-									accent="#3b82f6"
-								/>
-								<BigStat
-									label="Мощность"
-									value={selected.totalCapacity.toLocaleString("ru")}
-									accent="#8b5cf6"
-								/>
-							</div>
-							<div className="col-span-2 grid grid-cols-2 gap-3">
-								<BigStat
-									label="Педагогов"
-									value={(selected.district.teachers ?? 0).toLocaleString("ru")}
-									accent="#f59e0b"
-								/>
-								<BigStat
-									label="Работников"
-									value={(selected.district.workers ?? 0).toLocaleString("ru")}
-									accent="#3b82f6"
-								/>
-							</div>
-							<div className="col-span-2 grid grid-cols-2 gap-3">
-								<BigStat
-									label="Школ"
-									value={String(selected.schoolCount)}
-									accent="#10b981"
-								/>
-								<BigStat
-									label="Потребность"
-									value={Math.max(
-										0,
-										selected.studentsWithCapacity - selected.totalCapacity,
-									).toLocaleString("ru")}
-									accent="#ef4444"
-								/>
-							</div>
-						</div>
-						<div className="mt-2 hidden lg:block">
-							<Link
-								to={`/map?district=${selected.district.id}`}
-								className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.97]"
-							>
-								<svg
-									className="h-4 w-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-									/>
-								</svg>
-								Показать на карте
-							</Link>
-						</div>
+						{selectedSchool ? (
+							<SchoolDetailPanel
+								school={selectedSchool}
+								district={selected.district}
+								onBack={() => setSelectedSchool(null)}
+							/>
+						) : (
+							<DistrictSummaryPanel selected={selected} />
+						)}
 					</div>
 				</div>
 			</div>
@@ -324,6 +532,9 @@ export function DashboardPage() {
 								{sorted.map((r, i) => {
 									const students = r.district.students ?? 0;
 									const workers = r.district.workers ?? 0;
+									const monitoringColor = getMonitoringScoreColor(
+										r.district.monitoring_score,
+									);
 									const isOpen = expandedCard === r.district.id;
 									return (
 										<div
@@ -348,12 +559,11 @@ export function DashboardPage() {
 												<div className="min-w-0 flex-1">
 													<div className="flex items-center gap-1.5">
 														<span
-															title={
-																r.schools.some((s) => s.a_school_with_bias)
-																	? "Есть школа с необъективностью"
-																	: "Нет школ с необъективностью"
-															}
-															className={`h-2 w-2 shrink-0 rounded-full ${r.schools.some((s) => s.a_school_with_bias) ? "bg-rose-500" : "bg-emerald-500"}`}
+															title={monitoringTitle(
+																r.district.monitoring_score,
+															)}
+															className="h-2 w-2 shrink-0 rounded-full"
+															style={{ backgroundColor: monitoringColor }}
 														/>
 														<p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">
 															{r.shortName}
@@ -703,12 +913,13 @@ export function DashboardPage() {
 											<td className="py-4 pr-6">
 												<div className="flex items-center gap-3">
 													<span
-														title={
-															r.schools.some((s) => s.a_school_with_bias)
-																? "Есть школа с необъективностью"
-																: "Нет школ с необъективностью"
-														}
-														className={`h-2.5 w-2.5 shrink-0 rounded-full ${r.schools.some((s) => s.a_school_with_bias) ? "bg-rose-500" : "bg-emerald-500"}`}
+														title={monitoringTitle(r.district.monitoring_score)}
+														className="h-2.5 w-2.5 shrink-0 rounded-full"
+														style={{
+															backgroundColor: getMonitoringScoreColor(
+																r.district.monitoring_score,
+															),
+														}}
 													/>
 													<span className="font-semibold text-neutral-800 dark:text-neutral-200">
 														{r.shortName}

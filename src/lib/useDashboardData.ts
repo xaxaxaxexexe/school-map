@@ -97,7 +97,8 @@ export function useDashboardData() {
 				);
 				const criticalBuildings = schools.reduce(
 					(sum, school) =>
-						sum + (school.critical_condition ? schoolBuildingsCount(school) : 0),
+						sum +
+						(school.critical_condition ? schoolBuildingsCount(school) : 0),
 					0,
 				);
 				const secondShiftStudents = schools.reduce(
@@ -181,6 +182,8 @@ export function useDashboardData() {
 					return r.totalCapacity;
 				case "students":
 					return r.district.students ?? 0;
+				case "monitoringScore":
+					return r.district.monitoring_score ?? -Infinity;
 				case "secondShiftStudents":
 					return r.secondShiftStudents;
 				case "repairSchools":
@@ -228,8 +231,7 @@ export function useDashboardData() {
 		const repairCapacity = rows.reduce((s, r) => s + r.repairCapacity, 0);
 		const formSchools = rows.reduce((s, r) => s + r.formSchools, 0);
 		const formCapacity = rows.reduce((s, r) => s + r.formCapacity, 0);
-		const fillRate =
-			capacity > 0 ? (studentsWithCapacity / capacity) * 100 : 0;
+		const fillRate = capacity > 0 ? (studentsWithCapacity / capacity) * 100 : 0;
 		const demand = Math.max(0, studentsWithCapacity - capacity);
 		return {
 			students,
@@ -277,12 +279,34 @@ export function useDashboardData() {
 					return s.capacity ?? 0;
 				case "students":
 					return s.students ?? 0;
+				case "primary_students":
+					return s.primary_students ?? 0;
+				case "middle_students":
+					return s.middle_students ?? 0;
+				case "ninth_grade_students":
+					return s.ninth_grade_students ?? 0;
+				case "tenth_grade_students":
+					return s.tenth_grade_students ?? 0;
+				case "eleventh_grade_students":
+					return s.eleventh_grade_students ?? 0;
+				case "ege_stem_share":
+					return s.ege_stem_share ?? 0;
 				case "second_shift_students":
 					return s.second_shift_students ?? 0;
 				case "workers":
 					return s.workers ?? 0;
+				case "students_per_worker":
+					return s.students_per_worker ?? 0;
+				case "admin_staff":
+					return s.admin_staff ?? 0;
+				case "admin_staff_share":
+					return s.admin_staff_share ?? 0;
 				case "teachers":
 					return s.teachers ?? 0;
+				case "other_staff":
+					return s.other_staff ?? 0;
+				case "other_staff_share":
+					return s.other_staff_share ?? 0;
 				case "buildings":
 					return schoolBuildingsCount(s);
 				case "needs_repairs":

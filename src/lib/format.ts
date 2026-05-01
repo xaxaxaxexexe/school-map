@@ -8,6 +8,18 @@ export function fmt(v: number | null): string {
 	return v != null ? v.toLocaleString("ru") : "—";
 }
 
+export function fmtDecimal(v: number | null, digits = 1): string {
+	return v != null
+		? v.toLocaleString("ru", { maximumFractionDigits: digits })
+		: "—";
+}
+
+export function fmtPercent(v: number | null, digits = 1): string {
+	if (v == null) return "—";
+	const percent = Math.abs(v) <= 1 ? v * 100 : v;
+	return `${percent.toLocaleString("ru", { maximumFractionDigits: digits })}%`;
+}
+
 export function fmtSecondShiftStudents(
 	school: Pick<School, "shift" | "second_shift_students">,
 ): string {
@@ -21,7 +33,9 @@ export function fmtSecondShiftStudents(
 	return "—";
 }
 
-export function schoolBuildingsCount(school: Pick<School, "buildings">): number {
+export function schoolBuildingsCount(
+	school: Pick<School, "buildings">,
+): number {
 	return school.buildings ?? 1;
 }
 

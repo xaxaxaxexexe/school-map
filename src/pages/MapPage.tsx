@@ -57,6 +57,7 @@ export function MapPage() {
 	const mapRef = useRef<YandexMapHandle>(null);
 	const [searchParams] = useSearchParams();
 	const districtParam = searchParams.get("district");
+	const schoolParam = searchParams.get("school");
 	const [selectedDistrictId, setSelectedDistrictId] = useState<number | null>(
 		districtParam ? Number(districtParam) : null,
 	);
@@ -85,7 +86,20 @@ export function MapPage() {
 			: null;
 
 	useEffect(() => {
-		if (districtParam && loaded) {
+		if (!loaded) return;
+
+		if (schoolParam) {
+			const school = allSchools.find((s) => s.name === schoolParam);
+			if (school) {
+				setSelectedSchool(school);
+				if (school.coords) {
+					mapRef.current?.panTo(school.coords, 15, true);
+				}
+				return;
+			}
+		}
+
+		if (districtParam) {
 			const id = Number(districtParam);
 			const district = districts.find((d) => d.id === id);
 			if (district) {
@@ -93,7 +107,7 @@ export function MapPage() {
 				if (geo) mapRef.current?.panTo(geo.center, geo.zoom);
 			}
 		}
-	}, [districtParam, loaded, districts]);
+	}, [districtParam, schoolParam, loaded, districts, allSchools]);
 
 	const handleSelectDistrictFromSidebar = useCallback(
 		(id: number) => {

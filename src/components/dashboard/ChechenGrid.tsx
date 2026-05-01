@@ -1,4 +1,5 @@
 import type { DistrictRow } from "@/lib/useDashboardData";
+import { getMonitoringScoreColor } from "@/data/districts";
 
 interface ChechenGridProps {
 	rows: DistrictRow[];
@@ -88,10 +89,6 @@ function findRow(rows: DistrictRow[], name: string) {
 	return rows.find((r) => r.district.name === name || r.shortName === name);
 }
 
-function hasBias(r: DistrictRow | undefined) {
-	return r ? r.schools.some((s) => s.a_school_with_bias) : false;
-}
-
 function CellButton({
 	row,
 	onSelect,
@@ -104,18 +101,17 @@ function CellButton({
 	label?: string;
 }) {
 	if (!row) return null;
-	const bias = hasBias(row);
+	const color = getMonitoringScoreColor(row.district.monitoring_score);
 	const text = label ?? SHORT[row.district.name] ?? row.shortName;
 	return (
 		<button
 			onClick={() => onSelect(row.district.id!)}
-			className={`relative flex h-full w-full cursor-pointer transition hover:brightness-110 active:scale-[0.97] ${
-				bias ? "bg-rose-500" : "bg-emerald-500"
-			} ${small ? "items-center justify-center rounded-[3px] ring-1 ring-black/40" : "items-end justify-start rounded-md"}`}
+			className={`relative flex h-full w-full cursor-pointer transition hover:brightness-110 active:scale-[0.97] ${small ? "items-center justify-center rounded-[3px] ring-1 ring-black/40" : "items-end justify-start rounded-md"}`}
+			style={{ backgroundColor: color }}
 			title={
-				bias
-					? `${row.shortName} — есть школа с необъективностью`
-					: row.shortName
+				row.district.monitoring_score == null
+					? `${row.shortName} — балл мониторинга не указан`
+					: `${row.shortName} — ${row.district.monitoring_score.toLocaleString("ru")}`
 			}
 		>
 			<span
@@ -131,7 +127,9 @@ function CellButton({
 
 export function ChechenGrid({ rows, onSelect }: ChechenGridProps) {
 	const groznyMain = findRow(rows, "Грозный (город)");
-	const groznyBias = hasBias(groznyMain);
+	const groznyColor = getMonitoringScoreColor(
+		groznyMain?.district.monitoring_score,
+	);
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -154,9 +152,8 @@ export function ChechenGrid({ rows, onSelect }: ChechenGridProps) {
 							return (
 								<div
 									key={key}
-									className={`relative overflow-hidden rounded-md p-[2px] ${
-										groznyBias ? "bg-rose-500" : "bg-emerald-500"
-									}`}
+									className="relative overflow-hidden rounded-md p-[2px]"
+									style={{ backgroundColor: groznyColor }}
 									title="г. Грозный"
 								>
 									<button
@@ -187,11 +184,15 @@ export function ChechenGrid({ rows, onSelect }: ChechenGridProps) {
 			<div className="mt-2 flex items-center justify-end gap-4 px-1 text-[10px] sm:text-xs text-neutral-500 dark:text-neutral-400">
 				<span className="flex items-center gap-1.5">
 					<span className="h-2.5 w-2.5 rounded-sm bg-rose-500" />
-					Есть необъективность
+					&lt; 85
+				</span>
+				<span className="flex items-center gap-1.5">
+					<span className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
+					85-86.1
 				</span>
 				<span className="flex items-center gap-1.5">
 					<span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" />
-					Нет необъективности
+					&gt; 86.1
 				</span>
 			</div>
 		</div>

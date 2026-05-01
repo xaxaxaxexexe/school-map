@@ -98,6 +98,11 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 	const ymapsRef = useRef<any>(null);
 	const clustererRef = useRef<any>(null);
 	const bordersRef = useRef<any>(null);
+	const pendingPanRef = useRef<{
+		c: [number, number];
+		z: number;
+		force?: boolean;
+	} | null>(null);
 	const [ready, setReady] = useState(false);
 
 	const districtsRef = useRef(districts);
@@ -132,11 +137,24 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 
 	useImperativeHandle(ref, () => ({
 		panTo(c, z, force) {
-			const current = mapRef.current?.getZoom() ?? 0;
+			if (!mapRef.current) {
+				pendingPanRef.current = { c, z, force };
+				return;
+			}
+			const current = mapRef.current.getZoom() ?? 0;
 			const targetZoom = force ? z : Math.max(current, z);
-			mapRef.current?.setCenter(c, targetZoom, { duration: 600 });
+			mapRef.current.setCenter(c, targetZoom, { duration: 600 });
 		},
 	}));
+
+	useEffect(() => {
+		if (!ready || !mapRef.current || !pendingPanRef.current) return;
+		const { c, z, force } = pendingPanRef.current;
+		const current = mapRef.current.getZoom() ?? 0;
+		const targetZoom = force ? z : Math.max(current, z);
+		mapRef.current.setCenter(c, targetZoom, { duration: 600 });
+		pendingPanRef.current = null;
+	}, [ready]);
 
 	useEffect(() => {
 		if (!ready || !ymapsRef.current || !mapRef.current) return;
@@ -207,7 +225,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 						? coords.flatMap((poly: number[][][]) => poly.map(flipRing))
 						: coords.map(flipRing);
 
-				const hex = getDistrictColor(name);
+				const hex = getDistrictColor(name, districtsRef.current);
 
 				const polygon = new ymaps.Polygon(
 					rings,
@@ -260,14 +278,14 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 		} catch (e) {
 			console.warn("Could not render district borders:", e);
 		}
-	}, [ready]);
+	}, [ready, districts]);
 
 	useEffect(() => {
 		if (!bordersRef.current) return;
 
 		bordersRef.current.each((polygon: any) => {
 			const name: string = polygon.properties.get("districtName") ?? "";
-			const hex: string = polygon.properties.get("districtColor") ?? "#3b82f6";
+			const hex = getDistrictColor(name, districtsRef.current);
 			const id = matchBorderToDistrictId(name, districtsRef.current);
 			const isSelected = id != null && id === selectedDistrictId;
 
