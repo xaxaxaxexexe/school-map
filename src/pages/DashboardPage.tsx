@@ -232,7 +232,6 @@ function SchoolDetailPanel({
 					label="Необъективность"
 					value={yesNo(school.a_school_with_bias)}
 				/>
-				<InfoItem label="Государственная" value={yesNo(school.is_state)} />
 				<div className="col-span-2">
 					<InfoItem label="Адрес" value={school.address} />
 				</div>

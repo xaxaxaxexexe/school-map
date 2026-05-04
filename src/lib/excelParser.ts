@@ -334,7 +334,6 @@ function parseLegacy(rows: Cell[][]): ParsedData {
 			other_staff_share: null,
 			site: toStr(row[7]),
 			district: districtName,
-			is_state: toBool(row[8]),
 			is_religional: false,
 			address: toStr(row[9]),
 			coords,
@@ -414,7 +413,6 @@ function parseFlat(rows: Cell[][]): ParsedData {
 		"Район/Департамент",
 		11,
 	);
-	const stateIdx = headerIndex(header, "is_state", "Государственная");
 	const religionalIdx = headerIndex(header, "is_religional", "Религиозная");
 	const buildingsIdx = headerIndex(
 		header,
@@ -525,7 +523,6 @@ function parseFlat(rows: Cell[][]): ParsedData {
 			other_staff_share: otherStaffShare,
 			site,
 			district: districtName,
-			is_state: toBool(cell(row, stateIdx)),
 			is_religional: toBool(cell(row, religionalIdx)),
 			address: toStr(cell(row, addressIdx)),
 			coords,

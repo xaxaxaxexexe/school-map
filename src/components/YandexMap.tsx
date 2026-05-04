@@ -54,10 +54,7 @@ const ICON_BLUE = schoolIcon("#3b82f6");
 const ICON_RED = schoolIcon("#ef4444");
 
 function compactSchoolSummary(school: School) {
-	const line1 = [
-		`Гос.: ${yesNo(school.is_state)}`,
-		`Необъект.: ${yesNo(school.a_school_with_bias)}`,
-	].join(" · ");
+	const line1 = `Необъект.: ${yesNo(school.a_school_with_bias)}`;
 
 	const line2 = [
 		`2 смена: ${fmtSecondShiftStudents(school)}`,

@@ -368,7 +368,6 @@ function MobileSchoolCards({
 									</div>
 								</div>
 								<div className="mt-2 flex flex-wrap gap-1.5">
-									<StatusTag label="Гос." value={s.is_state} tone="positive" />
 									<StatusTag
 										label="Ремонт"
 										value={s.needs_repairs}
@@ -495,11 +494,6 @@ export function SchoolTable({
 												{s.name}
 											</p>
 											<div className="mt-1 flex flex-wrap gap-1.5">
-												<StatusTag
-													label="Гос."
-													value={s.is_state}
-													tone="positive"
-												/>
 												<StatusTag
 													label="Необъект."
 													value={s.a_school_with_bias}

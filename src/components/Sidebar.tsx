@@ -5,7 +5,6 @@ import {
 	fmtSecondShiftStudents,
 	schoolBuildingsCount,
 	yesNo,
-	statusClass,
 	siteUrl,
 } from "@/lib/format";
 
@@ -124,24 +123,6 @@ function BackButton({
 			</svg>
 			{label}
 		</button>
-	);
-}
-
-function StatusBadge({
-	label,
-	value,
-	tone = "neutral",
-}: {
-	label: string;
-	value: boolean;
-	tone?: "positive" | "negative" | "neutral";
-}) {
-	return (
-		<span
-			className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(value, tone)}`}
-		>
-			{label}: {yesNo(value)}
-		</span>
 	);
 }
 
@@ -404,9 +385,6 @@ function SchoolDetail({
 				<h2 className="mt-3 text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
 					{school.name}
 				</h2>
-				<div className="mt-2.5 flex flex-wrap gap-2">
-					<StatusBadge label="Гос." value={school.is_state} tone="positive" />
-				</div>
 			</div>
 			<div className="flex-1 overflow-y-auto px-5 py-4">
 				<div className="space-y-2">

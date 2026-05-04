@@ -27,7 +27,6 @@ export interface School {
 	other_staff_share: number | null;
 	site: string | null;
 	district: string | null;
-	is_state: boolean;
 	is_religional: boolean;
 	second_shift_students: number | null;
 	buildings: number | null;
