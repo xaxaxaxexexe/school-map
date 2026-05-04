@@ -148,10 +148,14 @@ function isNumericString(s: string): boolean {
 	return /^-?[\d\s]+([.,]\d+)?%?$/.test(s.trim());
 }
 
-function classifyExtra(values: Cell[]): ExtraType | null {
+function classifyExtra(
+	values: Cell[],
+	hasPercentFormat: boolean,
+): ExtraType | null {
 	const non = values.filter((v) => v != null && v !== "");
 	if (non.length === 0) return null;
 	let allNumeric = true;
+	let hasPercentSign = false;
 	const numbers: number[] = [];
 	for (const v of non) {
 		if (typeof v === "number") {
@@ -167,6 +171,7 @@ function classifyExtra(values: Cell[]): ExtraType | null {
 			allNumeric = false;
 			continue;
 		}
+		if (s.includes("%")) hasPercentSign = true;
 		if (isNumericString(s)) {
 			const n = parseFloat(
 				s.replace(/\s/g, "").replace(",", ".").replace("%", ""),
@@ -180,6 +185,7 @@ function classifyExtra(values: Cell[]): ExtraType | null {
 	}
 	if (!allNumeric) return "boolean";
 	if (numbers.length === 0) return null;
+	if (hasPercentFormat || hasPercentSign) return "percent";
 	if (numbers.every((n) => n >= 0 && n <= 1)) {
 		if (numbers.some((n) => n !== Math.floor(n))) return "percent";
 		return "boolean";
@@ -334,7 +340,10 @@ interface DistrictRowAccum {
 	extras: Record<string, ExtraValue>;
 }
 
-function parseFlat(rows: Cell[][]): ParsedData {
+function parseFlat(
+	rows: Cell[][],
+	percentFormatCols: Set<number>,
+): ParsedData {
 	const header = rows[0]!;
 	const { required, extras: extraDefs } = indexHeaders(header);
 
@@ -386,7 +395,7 @@ function parseFlat(rows: Cell[][]): ParsedData {
 	const extraCols: ExtraColumn[] = [];
 	for (const def of extraDefs) {
 		const values: Cell[] = classified.map((c) => cell(c.row, def.idx));
-		const type = classifyExtra(values);
+		const type = classifyExtra(values, percentFormatCols.has(def.idx));
 		if (type === null) continue;
 		extraCols.push({ key: def.key, label: def.label, type });
 	}
@@ -546,14 +555,36 @@ export function normalizeParsedData(data: ParsedData): ParsedData {
 	};
 }
 
+function collectPercentFormatColumns(
+	sheet: XLSX.WorkSheet,
+): Set<number> {
+	const cols = new Set<number>();
+	const ref = sheet["!ref"];
+	if (!ref) return cols;
+	const range = XLSX.utils.decode_range(ref);
+	for (let C = range.s.c; C <= range.e.c; C++) {
+		for (let R = range.s.r; R <= range.e.r; R++) {
+			const cell = sheet[XLSX.utils.encode_cell({ r: R, c: C })] as
+				| { z?: string }
+				| undefined;
+			if (cell?.z && String(cell.z).includes("%")) {
+				cols.add(C);
+				break;
+			}
+		}
+	}
+	return cols;
+}
+
 export function parseExcelFile(file: File): Promise<ParsedData> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onload = (e) => {
 			try {
 				const data = new Uint8Array(e.target!.result as ArrayBuffer);
-				const workbook = XLSX.read(data, { type: "array" });
+				const workbook = XLSX.read(data, { type: "array", cellNF: true });
 				const sheet = workbook.Sheets[workbook.SheetNames[0]!]!;
+				const percentFormatCols = collectPercentFormatColumns(sheet);
 				const raw: Cell[][] = XLSX.utils.sheet_to_json(sheet, {
 					header: 1,
 					defval: null,
@@ -573,7 +604,7 @@ export function parseExcelFile(file: File): Promise<ParsedData> {
 					return;
 				}
 
-				resolve(parseFlat(rows));
+				resolve(parseFlat(rows, percentFormatCols));
 			} catch (err) {
 				reject(err);
 			}

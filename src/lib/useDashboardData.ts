@@ -43,6 +43,17 @@ function aggregateExtra(
 	col: ExtraColumn,
 	schools: School[],
 ): number | null {
+	if (col.type === "boolean") {
+		if (schools.length === 0) return null;
+		let truthy = 0;
+		for (const s of schools) {
+			const v = s.extras?.[col.key];
+			if (v === true) truthy += 1;
+			else if (typeof v === "number" && v !== 0) truthy += 1;
+		}
+		return truthy / schools.length;
+	}
+
 	const vals: ExtraValueLike[] = [];
 	for (const s of schools) {
 		const v = s.extras?.[col.key];
@@ -58,20 +69,6 @@ function aggregateExtra(
 			else if (typeof v === "boolean") sum += v ? 1 : 0;
 		}
 		return sum;
-	}
-
-	if (col.type === "boolean") {
-		let truthy = 0;
-		let total = 0;
-		for (const v of vals) {
-			total += 1;
-			if (typeof v === "boolean") {
-				if (v) truthy += 1;
-			} else if (typeof v === "number") {
-				if (v !== 0) truthy += 1;
-			}
-		}
-		return total > 0 ? truthy / total : null;
 	}
 
 	// percent: average of numeric values

@@ -31,12 +31,12 @@ function InfoItem({
 	value: string | number | null;
 }) {
 	return (
-		<div className="rounded-xl bg-neutral-50 dark:bg-neutral-900 px-3 py-2.5">
-			<p className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500">
-				{label}
-			</p>
-			<p className="mt-0.5 wrap-break-word text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+		<div className="flex flex-col items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 p-4 shadow-sm ring-1 ring-neutral-100 dark:ring-neutral-700">
+			<p className="wrap-break-word text-center text-sm font-semibold text-neutral-800 dark:text-neutral-200">
 				{value ?? "—"}
+			</p>
+			<p className="mt-1 text-center text-[11px] font-medium leading-tight text-neutral-400 dark:text-neutral-500">
+				{label}
 			</p>
 		</div>
 	);
@@ -795,101 +795,98 @@ export function DashboardPage() {
 												}
 											/>
 										</th>
-										{expanded && (
-											<>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("schoolCount")}
-												>
-													Школ
-													<SortArrow
-														active={districtSort.key === "schoolCount"}
-														dir={
-															districtSort.key === "schoolCount"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("totalCapacity")}
-												>
-													Мощность
-													<SortArrow
-														active={districtSort.key === "totalCapacity"}
-														dir={
-															districtSort.key === "totalCapacity"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("students")}
-												>
-													Обучающихся
-													<SortArrow
-														active={districtSort.key === "students"}
-														dir={
-															districtSort.key === "students"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("workers")}
-												>
-													Работников
-													<SortArrow
-														active={districtSort.key === "workers"}
-														dir={
-															districtSort.key === "workers"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("teachers")}
-												>
-													Педагогов
-													<SortArrow
-														active={districtSort.key === "teachers"}
-														dir={
-															districtSort.key === "teachers"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												{extraColumns.map((col) => {
-													const sk = `extra:${col.key}`;
-													return (
-														<th
-															key={col.key}
-															className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-															onClick={() => toggleDistrictSort(sk)}
-															title={col.label}
-														>
-															{col.label}
-															<SortArrow
-																active={districtSort.key === sk}
-																dir={
-																	districtSort.key === sk
-																		? districtSort.dir
-																		: "asc"
-																}
-															/>
-														</th>
-													);
-												})}
-											</>
-										)}
+										<th
+											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											onClick={() => toggleDistrictSort("schoolCount")}
+										>
+											Школ
+											<SortArrow
+												active={districtSort.key === "schoolCount"}
+												dir={
+													districtSort.key === "schoolCount"
+														? districtSort.dir
+														: "asc"
+												}
+											/>
+										</th>
+										<th
+											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											onClick={() => toggleDistrictSort("totalCapacity")}
+										>
+											Мощность
+											<SortArrow
+												active={districtSort.key === "totalCapacity"}
+												dir={
+													districtSort.key === "totalCapacity"
+														? districtSort.dir
+														: "asc"
+												}
+											/>
+										</th>
+										<th
+											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											onClick={() => toggleDistrictSort("students")}
+										>
+											Обучающихся
+											<SortArrow
+												active={districtSort.key === "students"}
+												dir={
+													districtSort.key === "students"
+														? districtSort.dir
+														: "asc"
+												}
+											/>
+										</th>
+										<th
+											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											onClick={() => toggleDistrictSort("workers")}
+										>
+											Работников
+											<SortArrow
+												active={districtSort.key === "workers"}
+												dir={
+													districtSort.key === "workers"
+														? districtSort.dir
+														: "asc"
+												}
+											/>
+										</th>
+										<th
+											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											onClick={() => toggleDistrictSort("teachers")}
+										>
+											Педагогов
+											<SortArrow
+												active={districtSort.key === "teachers"}
+												dir={
+													districtSort.key === "teachers"
+														? districtSort.dir
+														: "asc"
+												}
+											/>
+										</th>
+										{expanded &&
+											extraColumns.map((col) => {
+												const sk = `extra:${col.key}`;
+												return (
+													<th
+														key={col.key}
+														className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+														onClick={() => toggleDistrictSort(sk)}
+														title={col.label}
+													>
+														{col.label}
+														<SortArrow
+															active={districtSort.key === sk}
+															dir={
+																districtSort.key === sk
+																	? districtSort.dir
+																	: "asc"
+															}
+														/>
+													</th>
+												);
+											})}
 									</tr>
 								</thead>
 								<tbody>
@@ -921,33 +918,30 @@ export function DashboardPage() {
 											<td className="py-4 px-4 text-center">
 												<FillBar value={r.fillRate} />
 											</td>
-											{expanded && (
-												<>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.schoolCount}
+											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+												{r.schoolCount}
+											</td>
+											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+												{r.totalCapacity.toLocaleString("ru")}
+											</td>
+											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+												{r.totalStudents.toLocaleString("ru")}
+											</td>
+											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+												{r.totalWorkers.toLocaleString("ru")}
+											</td>
+											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+												{r.totalTeachers.toLocaleString("ru")}
+											</td>
+											{expanded &&
+												extraColumns.map((col) => (
+													<td
+														key={col.key}
+														className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300"
+													>
+														{fmtAggregatedExtra(r.extras[col.key], col.type)}
 													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.totalCapacity.toLocaleString("ru")}
-													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.totalStudents.toLocaleString("ru")}
-													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.totalWorkers.toLocaleString("ru")}
-													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.totalTeachers.toLocaleString("ru")}
-													</td>
-													{extraColumns.map((col) => (
-														<td
-															key={col.key}
-															className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300"
-														>
-															{fmtAggregatedExtra(r.extras[col.key], col.type)}
-														</td>
-													))}
-												</>
-											)}
+												))}
 										</tr>
 									))}
 								</tbody>
