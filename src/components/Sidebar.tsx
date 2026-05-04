@@ -1,12 +1,7 @@
 import { useState } from "react";
-import type { District, School } from "@/types";
+import type { District, ExtraColumn, School } from "@/types";
 import { DISTRICT_GEO } from "@/data/districts";
-import {
-	fmtSecondShiftStudents,
-	schoolBuildingsCount,
-	yesNo,
-	siteUrl,
-} from "@/lib/format";
+import { fmtExtraValue, siteUrl } from "@/lib/format";
 
 interface SidebarProps {
 	districts: District[];
@@ -14,6 +9,7 @@ interface SidebarProps {
 	schools: School[];
 	selectedSchool: School | null;
 	loading: boolean;
+	extraColumns: ExtraColumn[];
 	onSelectDistrict: (id: number) => void;
 	onSelectSchool: (school: School) => void;
 	onBack: () => void;
@@ -26,6 +22,7 @@ export function Sidebar({
 	schools,
 	selectedSchool,
 	loading,
+	extraColumns,
 	onSelectDistrict,
 	onSelectSchool,
 	onBack,
@@ -38,7 +35,11 @@ export function Sidebar({
 					<Loading />
 				</div>
 			) : selectedSchool ? (
-				<SchoolDetail school={selectedSchool} onBack={onBackToSchools} />
+				<SchoolDetail
+					school={selectedSchool}
+					extraColumns={extraColumns}
+					onBack={onBackToSchools}
+				/>
 			) : selectedDistrict ? (
 				<DistrictDetail
 					district={selectedDistrict}
@@ -371,9 +372,11 @@ function DistrictDetail({
 
 function SchoolDetail({
 	school,
+	extraColumns,
 	onBack,
 }: {
 	school: School;
+	extraColumns: ExtraColumn[];
 	onBack: () => void;
 }) {
 	const url = siteUrl(school.site);
@@ -385,6 +388,11 @@ function SchoolDetail({
 				<h2 className="mt-3 text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
 					{school.name}
 				</h2>
+				{school.institution_type && (
+					<p className="mt-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+						{school.institution_type}
+					</p>
+				)}
 			</div>
 			<div className="flex-1 overflow-y-auto px-5 py-4">
 				<div className="space-y-2">
@@ -448,99 +456,55 @@ function SchoolDetail({
 							</div>
 						</div>
 					)}
-					{(school.shift != null || school.capacity != null) && (
-						<div className="grid grid-cols-2 gap-2">
-							{school.shift != null && (
-								<MiniStat
-									label="Сменность"
-									value={`${school.shift}`}
-									color="#8b5cf6"
-								/>
-							)}
-							{school.capacity != null && (
-								<MiniStat
-									label="Мощность"
-									value={school.capacity.toLocaleString("ru")}
-									color="#f59e0b"
-								/>
-							)}
-						</div>
-					)}
-					{(school.students != null ||
-						school.teachers != null ||
-						school.workers != null) && (
+					<div className="grid grid-cols-3 gap-2">
+						{school.shift != null && (
+							<MiniStat
+								label="Сменность"
+								value={`${school.shift}`}
+								color="#8b5cf6"
+							/>
+						)}
+						{school.capacity != null && (
+							<MiniStat
+								label="Мощность"
+								value={school.capacity.toLocaleString("ru")}
+								color="#f59e0b"
+							/>
+						)}
+						{school.students != null && (
+							<MiniStat
+								label="Обучающихся"
+								value={school.students.toLocaleString("ru")}
+								color="#3b82f6"
+							/>
+						)}
+						{school.teachers != null && (
+							<MiniStat
+								label="Педагогов"
+								value={school.teachers.toLocaleString("ru")}
+								color="#8b5cf6"
+							/>
+						)}
+						{school.workers != null && (
+							<MiniStat
+								label="Работников"
+								value={school.workers.toLocaleString("ru")}
+								color="#10b981"
+							/>
+						)}
+					</div>
+					{extraColumns.length > 0 && (
 						<div className="grid grid-cols-3 gap-2">
-							{school.students != null && (
+							{extraColumns.map((col) => (
 								<MiniStat
-									label="Обучающихся"
-									value={school.students.toLocaleString("ru")}
-									color="#3b82f6"
+									key={col.key}
+									label={col.label}
+									value={fmtExtraValue(school.extras?.[col.key] ?? null, col.type)}
+									color="#64748b"
 								/>
-							)}
-							{school.teachers != null && (
-								<MiniStat
-									label="Педагогов"
-									value={school.teachers.toLocaleString("ru")}
-									color="#8b5cf6"
-								/>
-							)}
-							{school.workers != null && (
-								<MiniStat
-									label="Работников"
-									value={school.workers.toLocaleString("ru")}
-									color="#10b981"
-								/>
-							)}
+							))}
 						</div>
 					)}
-					<div className="grid grid-cols-2 gap-2">
-						<MiniStat
-							label="Обуч. во 2 смену"
-							value={fmtSecondShiftStudents(school)}
-							color="#3b82f6"
-						/>
-						<MiniStat
-							label="Зданий"
-							value={`${schoolBuildingsCount(school)}`}
-							color="#8b5cf6"
-						/>
-					</div>
-					<div className="grid grid-cols-2 gap-2">
-						<MiniStat
-							label="Треб. ремонта"
-							value={yesNo(school.needs_repairs)}
-							color={school.needs_repairs ? "#ef4444" : "#10b981"}
-						/>
-						<MiniStat
-							label="Аварийное"
-							value={yesNo(school.critical_condition)}
-							color={school.critical_condition ? "#ef4444" : "#10b981"}
-						/>
-					</div>
-					<div className="grid grid-cols-2 gap-2">
-						<MiniStat
-							label="Отремонтирована"
-							value={yesNo(school.renovated)}
-							color={school.renovated ? "#10b981" : "#6b7280"}
-						/>
-						<MiniStat
-							label="Форма"
-							value={yesNo(school.form)}
-							color={school.form ? "#8b5cf6" : "#6b7280"}
-						/>
-					</div>
-					<div className="grid grid-cols-2 gap-2">
-						<MiniStat
-							label="ШНОР"
-							value={yesNo(school.shkon)}
-							color={school.shkon ? "#2563eb" : "#6b7280"}
-						/>
-						<MiniStat
-							label="С необъективностью"
-							value={yesNo(school.a_school_with_bias)}
-							color={school.a_school_with_bias ? "#0ea5e9" : "#6b7280"}
-						/>
-					</div>
 				</div>
 			</div>
 		</>
@@ -579,10 +543,17 @@ function MiniStat({
 }) {
 	return (
 		<div className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 px-3 py-3 text-center">
-			<p className="text-base font-semibold tracking-tight" style={{ color }}>
+			<p
+				className="text-base font-semibold tracking-tight truncate"
+				style={{ color }}
+				title={value}
+			>
 				{value}
 			</p>
-			<p className="mt-0.5 text-[11px] font-medium text-neutral-400 dark:text-neutral-500">
+			<p
+				className="mt-0.5 text-[11px] font-medium text-neutral-400 dark:text-neutral-500 truncate"
+				title={label}
+			>
 				{label}
 			</p>
 		</div>

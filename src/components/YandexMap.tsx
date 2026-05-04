@@ -10,11 +10,6 @@ import { matchBorderToDistrictId, getDistrictColor } from "@/data/districts";
 import bordersGeoJSON from "@/data/borders.geojson?raw";
 import republicBorderJSON from "@/data/republic-border.geojson?raw";
 import type { District, School } from "@/types";
-import {
-	fmtSecondShiftStudents,
-	schoolBuildingsCount,
-	yesNo,
-} from "@/lib/format";
 
 export interface YandexMapHandle {
 	panTo(center: [number, number], zoom: number, force?: boolean): void;
@@ -52,30 +47,6 @@ function schoolIcon(color: string): string {
 
 const ICON_BLUE = schoolIcon("#3b82f6");
 const ICON_RED = schoolIcon("#ef4444");
-
-function compactSchoolSummary(school: School) {
-	const line1 = `Необъект.: ${yesNo(school.a_school_with_bias)}`;
-
-	const line2 = [
-		`2 смена: ${fmtSecondShiftStudents(school)}`,
-		`Зданий: ${schoolBuildingsCount(school)}`,
-	]
-		.filter(Boolean)
-		.join(" · ");
-
-	const line3 = [
-		`Ремонт: ${yesNo(school.needs_repairs)}`,
-		`Аварийное: ${yesNo(school.critical_condition)}`,
-	].join(" · ");
-
-	const line4 = [
-		`Отремонтирована: ${yesNo(school.renovated)}`,
-		`Форма: ${yesNo(school.form)}`,
-		`ШНОР: ${yesNo(school.shkon)}`,
-	].join(" · ");
-
-	return [line1, line2, line3, line4].filter(Boolean).join("<br>");
-}
 
 export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 	{
@@ -343,7 +314,8 @@ ${school.shift != null ? `Сменность: ${school.shift}<br>` : ""}
 ${school.students != null ? `Обучающихся: ${school.students.toLocaleString("ru")}<br>` : ""}
 ${school.teachers != null ? `Педагогов: ${school.teachers.toLocaleString("ru")}<br>` : ""}
 ${school.workers != null ? `Работников: ${school.workers.toLocaleString("ru")}<br>` : ""}
-${compactSchoolSummary(school)}<br>
+${school.institution_type ? `Тип: ${school.institution_type}<br>` : ""}
+${school.address ? `Адрес: ${school.address}<br>` : ""}
 <a href="#" onclick="window.__selectSchool('${school.name.replace(/'/g, "\\'")}');return false" style="display:inline-block;margin-top:6px;padding:4px 12px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500">Выбрать</a>
 </div>`,
 				},

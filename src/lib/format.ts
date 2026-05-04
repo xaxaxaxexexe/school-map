@@ -1,4 +1,4 @@
-import type { School } from "@/types";
+import type { ExtraType, ExtraValue } from "@/types";
 
 export function yesNo(value: boolean): string {
 	return value ? "Да" : "Нет";
@@ -18,25 +18,6 @@ export function fmtPercent(v: number | null, digits = 1): string {
 	if (v == null) return "—";
 	const percent = Math.abs(v) <= 1 ? v * 100 : v;
 	return `${percent.toLocaleString("ru", { maximumFractionDigits: digits })}%`;
-}
-
-export function fmtSecondShiftStudents(
-	school: Pick<School, "shift" | "second_shift_students">,
-): string {
-	if (school.second_shift_students != null) {
-		return school.second_shift_students.toLocaleString("ru");
-	}
-
-	if (school.shift === 2) return "Н/Д";
-	if (school.shift === 1) return "0";
-
-	return "—";
-}
-
-export function schoolBuildingsCount(
-	school: Pick<School, "buildings">,
-): number {
-	return school.buildings ?? 1;
 }
 
 export function schoolWord(n: number): string {
@@ -62,23 +43,19 @@ export function calcFillRate(
 	return c > 0 ? (s / c) * 100 : 0;
 }
 
-export function statusClass(
-	value: boolean,
-	tone: "positive" | "negative" | "neutral",
+export function fmtExtraValue(value: ExtraValue, type: ExtraType): string {
+	if (value == null) return "—";
+	if (type === "numeric") return fmt(value as number);
+	if (type === "boolean") return yesNo(value as boolean);
+	if (type === "percent") return fmtPercent(value as number);
+	return "—";
+}
+
+export function fmtAggregatedExtra(
+	value: number | null | undefined,
+	type: ExtraType,
 ): string {
-	if (tone === "positive") {
-		return value
-			? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-			: "bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300";
-	}
-
-	if (tone === "negative") {
-		return value
-			? "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
-			: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-	}
-
-	return value
-		? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-		: "bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300";
+	if (value == null) return "—";
+	if (type === "numeric") return fmt(value);
+	return fmtPercent(value);
 }

@@ -1,240 +1,51 @@
 import React, { useState } from "react";
-import type { School } from "@/types";
+import type { ExtraColumn, School } from "@/types";
 import type { SortState } from "@/lib/useDashboardData";
 import {
 	fmt,
-	fmtDecimal,
-	fmtPercent,
-	fmtSecondShiftStudents,
-	schoolBuildingsCount,
+	fmtExtraValue,
 	siteUrl,
 	calcFillRate,
-	yesNo,
-	statusClass,
 } from "@/lib/format";
 import { SortArrow } from "@/components/ui/SortArrow";
-
-interface Column {
-	label: string;
-	sortKey: string;
-	render: (s: School, fillRate: number) => React.ReactNode;
-}
 
 const TH =
 	"py-3 px-3 text-center text-[11px] font-semibold uppercase tracking-wider text-white/70 whitespace-nowrap";
 const TD =
 	"py-4 px-3 text-center font-medium text-neutral-700 dark:text-neutral-300 whitespace-nowrap";
 
-function StatusTag({
-	label,
-	value,
-	tone = "neutral",
-}: {
-	label: string;
-	value: boolean;
-	tone?: "positive" | "negative" | "neutral";
-}) {
+function ExtraPill({ value }: { value: boolean }) {
+	const cls = value
+		? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+		: "bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300";
 	return (
 		<span
-			className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusClass(value, tone)}`}
+			className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cls}`}
 		>
-			{label}: {yesNo(value)}
+			{value ? "Да" : "Нет"}
 		</span>
 	);
 }
 
-const COLUMNS: Column[] = [
-	{
-		label: "Мощность",
-		sortKey: "capacity",
-		render: (s) => <td className={TD}>{fmt(s.capacity)}</td>,
-	},
-	{
-		label: "Обучающихся",
-		sortKey: "students",
-		render: (s) => <td className={TD}>{fmt(s.students)}</td>,
-	},
-	{
-		label: "1-4 кл.",
-		sortKey: "primary_students",
-		render: (s) => <td className={TD}>{fmt(s.primary_students)}</td>,
-	},
-	{
-		label: "5-8 кл.",
-		sortKey: "middle_students",
-		render: (s) => <td className={TD}>{fmt(s.middle_students)}</td>,
-	},
-	{
-		label: "9 кл.",
-		sortKey: "ninth_grade_students",
-		render: (s) => <td className={TD}>{fmt(s.ninth_grade_students)}</td>,
-	},
-	{
-		label: "10 кл.",
-		sortKey: "tenth_grade_students",
-		render: (s) => <td className={TD}>{fmt(s.tenth_grade_students)}</td>,
-	},
-	{
-		label: "11 кл.",
-		sortKey: "eleventh_grade_students",
-		render: (s) => <td className={TD}>{fmt(s.eleventh_grade_students)}</td>,
-	},
-	{
-		label: "ЕГЭ хим/физ/био/мат/ИКТ",
-		sortKey: "ege_stem_share",
-		render: (s) => <td className={TD}>{fmtPercent(s.ege_stem_share)}</td>,
-	},
-	{
-		label: "Обуч. во 2 смену",
-		sortKey: "second_shift_students",
-		render: (s) => <td className={TD}>{fmtSecondShiftStudents(s)}</td>,
-	},
-	{
-		label: "Работников",
-		sortKey: "workers",
-		render: (s) => <td className={TD}>{fmt(s.workers)}</td>,
-	},
-	{
-		label: "Уч. / работника",
-		sortKey: "students_per_worker",
-		render: (s) => <td className={TD}>{fmtDecimal(s.students_per_worker)}</td>,
-	},
-	{
-		label: "АУП",
-		sortKey: "admin_staff",
-		render: (s) => <td className={TD}>{fmt(s.admin_staff)}</td>,
-	},
-	{
-		label: "Доля АУП",
-		sortKey: "admin_staff_share",
-		render: (s) => <td className={TD}>{fmtPercent(s.admin_staff_share)}</td>,
-	},
-	{
-		label: "Педагогов",
-		sortKey: "teachers",
-		render: (s) => <td className={TD}>{fmt(s.teachers)}</td>,
-	},
-	{
-		label: "Иных работников",
-		sortKey: "other_staff",
-		render: (s) => <td className={TD}>{fmt(s.other_staff)}</td>,
-	},
-	{
-		label: "Доля иных",
-		sortKey: "other_staff_share",
-		render: (s) => <td className={TD}>{fmtPercent(s.other_staff_share)}</td>,
-	},
-	{
-		label: "Сайт",
-		sortKey: "site",
-		render: (s) => {
-			const url = siteUrl(s.site);
-			return (
-				<td className="py-4 px-3 text-center">
-					{url ? (
-						<a
-							href={url}
-							target="_blank"
-							rel="noopener noreferrer"
-							onClick={(e) => e.stopPropagation()}
-							className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
-						>
-							{s.site}
-						</a>
-					) : (
-						<span className="text-neutral-400 dark:text-neutral-500">—</span>
-					)}
-				</td>
-			);
-		},
-	},
-	{
-		label: "Зданий",
-		sortKey: "buildings",
-		render: (s) => <td className={TD}>{schoolBuildingsCount(s)}</td>,
-	},
-	{
-		label: "Треб. ремонта",
-		sortKey: "needs_repairs",
-		render: (s) => (
+function renderExtraCell(school: School, col: ExtraColumn) {
+	const v = school.extras?.[col.key];
+	if (col.type === "boolean") {
+		return (
 			<td className="py-4 px-3 text-center whitespace-nowrap">
-				<span
-					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.needs_repairs, "negative")}`}
-				>
-					{yesNo(s.needs_repairs)}
-				</span>
+				{v == null ? (
+					<span className="text-neutral-400 dark:text-neutral-500">—</span>
+				) : (
+					<ExtraPill value={Boolean(v)} />
+				)}
 			</td>
-		),
-	},
-	{
-		label: "Аварийное",
-		sortKey: "critical_condition",
-		render: (s) => (
-			<td className="py-4 px-3 text-center whitespace-nowrap">
-				<span
-					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.critical_condition, "negative")}`}
-				>
-					{yesNo(s.critical_condition)}
-				</span>
-			</td>
-		),
-	},
-	{
-		label: "Отремонтирована",
-		sortKey: "renovated",
-		render: (s) => (
-			<td className="py-4 px-3 text-center whitespace-nowrap">
-				<span
-					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.renovated, "positive")}`}
-				>
-					{yesNo(s.renovated)}
-				</span>
-			</td>
-		),
-	},
-	{
-		label: "Строится",
-		sortKey: "form",
-		render: (s) => (
-			<td className="py-4 px-3 text-center whitespace-nowrap">
-				<span
-					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.form, "neutral")}`}
-				>
-					{yesNo(s.form)}
-				</span>
-			</td>
-		),
-	},
-	{
-		label: "ШНОР",
-		sortKey: "shkon",
-		render: (s) => (
-			<td className="py-4 px-3 text-center whitespace-nowrap">
-				<span
-					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.shkon, "neutral")}`}
-				>
-					{yesNo(s.shkon)}
-				</span>
-			</td>
-		),
-	},
-	{
-		label: "С необъективностью",
-		sortKey: "a_school_with_bias",
-		render: (s) => (
-			<td className="py-4 px-3 text-center whitespace-nowrap">
-				<span
-					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.a_school_with_bias, "neutral")}`}
-				>
-					{yesNo(s.a_school_with_bias)}
-				</span>
-			</td>
-		),
-	},
-];
+		);
+	}
+	return <td className={TD}>{fmtExtraValue(v ?? null, col.type)}</td>;
+}
 
 interface SchoolTableProps {
 	schools: School[];
+	extraColumns: ExtraColumn[];
 	sort: SortState<string>;
 	onToggleSort: (key: string) => void;
 	selectedSchoolName?: string | null;
@@ -243,10 +54,12 @@ interface SchoolTableProps {
 
 function MobileSchoolCards({
 	schools,
+	extraColumns,
 	selectedSchoolName,
 	onSelectSchool,
 }: {
 	schools: School[];
+	extraColumns: ExtraColumn[];
 	selectedSchoolName?: string | null;
 	onSelectSchool?: (school: School) => void;
 }) {
@@ -336,10 +149,10 @@ function MobileSchoolCards({
 									</div>
 									<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
 										<p className="font-bold text-neutral-800 dark:text-neutral-200">
-											{fmtSecondShiftStudents(s)}
+											{fmt(s.shift)}
 										</p>
 										<p className="text-neutral-400 dark:text-neutral-500">
-											Во 2 смену
+											Сменность
 										</p>
 									</div>
 									<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
@@ -358,38 +171,22 @@ function MobileSchoolCards({
 											Педагогов
 										</p>
 									</div>
-									<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-										<p className="font-bold text-neutral-800 dark:text-neutral-200">
-											{schoolBuildingsCount(s)}
-										</p>
-										<p className="text-neutral-400 dark:text-neutral-500">
-											Зданий
-										</p>
-									</div>
-								</div>
-								<div className="mt-2 flex flex-wrap gap-1.5">
-									<StatusTag
-										label="Ремонт"
-										value={s.needs_repairs}
-										tone="negative"
-									/>
-									<StatusTag
-										label="Аварийное"
-										value={s.critical_condition}
-										tone="negative"
-									/>
-									<StatusTag
-										label="Отрем."
-										value={s.renovated}
-										tone="positive"
-									/>
-									<StatusTag label="Строится" value={s.form} tone="neutral" />
-									<StatusTag label="ШНОР" value={s.shkon} tone="neutral" />
-									<StatusTag
-										label="Необъект."
-										value={s.a_school_with_bias}
-										tone="neutral"
-									/>
+									{extraColumns.slice(0, 4).map((col) => (
+										<div
+											key={col.key}
+											className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2"
+										>
+											<p className="font-bold text-neutral-800 dark:text-neutral-200">
+												{fmtExtraValue(s.extras?.[col.key] ?? null, col.type)}
+											</p>
+											<p
+												className="text-neutral-400 dark:text-neutral-500 truncate"
+												title={col.label}
+											>
+												{col.label}
+											</p>
+										</div>
+									))}
 								</div>
 								{s.address && (
 									<p className="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
@@ -418,6 +215,7 @@ function MobileSchoolCards({
 
 export function SchoolTable({
 	schools,
+	extraColumns,
 	sort,
 	onToggleSort,
 	selectedSchoolName,
@@ -427,6 +225,7 @@ export function SchoolTable({
 		<>
 			<MobileSchoolCards
 				schools={schools}
+				extraColumns={extraColumns}
 				selectedSchoolName={selectedSchoolName}
 				onSelectSchool={onSelectSchool}
 			/>
@@ -446,24 +245,89 @@ export function SchoolTable({
 								dir={sort.key === "name" ? sort.dir : "asc"}
 							/>
 						</th>
-						{COLUMNS.map((col) => (
-							<th
-								key={col.label}
-								className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
-								onClick={() => onToggleSort(col.sortKey)}
-							>
-								{col.label}
-								<SortArrow
-									active={sort.key === col.sortKey}
-									dir={sort.key === col.sortKey ? sort.dir : "asc"}
-								/>
-							</th>
-						))}
+						<th
+							className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
+							onClick={() => onToggleSort("capacity")}
+						>
+							Мощность
+							<SortArrow
+								active={sort.key === "capacity"}
+								dir={sort.key === "capacity" ? sort.dir : "asc"}
+							/>
+						</th>
+						<th
+							className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
+							onClick={() => onToggleSort("students")}
+						>
+							Обучающихся
+							<SortArrow
+								active={sort.key === "students"}
+								dir={sort.key === "students" ? sort.dir : "asc"}
+							/>
+						</th>
+						<th
+							className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
+							onClick={() => onToggleSort("shift")}
+						>
+							Сменность
+							<SortArrow
+								active={sort.key === "shift"}
+								dir={sort.key === "shift" ? sort.dir : "asc"}
+							/>
+						</th>
+						<th
+							className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
+							onClick={() => onToggleSort("workers")}
+						>
+							Работников
+							<SortArrow
+								active={sort.key === "workers"}
+								dir={sort.key === "workers" ? sort.dir : "asc"}
+							/>
+						</th>
+						<th
+							className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
+							onClick={() => onToggleSort("teachers")}
+						>
+							Педагогов
+							<SortArrow
+								active={sort.key === "teachers"}
+								dir={sort.key === "teachers" ? sort.dir : "asc"}
+							/>
+						</th>
+						<th
+							className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
+							onClick={() => onToggleSort("site")}
+						>
+							Сайт
+							<SortArrow
+								active={sort.key === "site"}
+								dir={sort.key === "site" ? sort.dir : "asc"}
+							/>
+						</th>
+						{extraColumns.map((col) => {
+							const sk = `extra:${col.key}`;
+							return (
+								<th
+									key={col.key}
+									className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
+									onClick={() => onToggleSort(sk)}
+									title={col.label}
+								>
+									{col.label}
+									<SortArrow
+										active={sort.key === sk}
+										dir={sort.key === sk ? sort.dir : "asc"}
+									/>
+								</th>
+							);
+						})}
 					</tr>
 				</thead>
 				<tbody>
 					{schools.map((s, i) => {
 						const fr = calcFillRate(s.students, s.capacity);
+						const url = siteUrl(s.site);
 						return (
 							<tr
 								key={i}
@@ -493,13 +357,6 @@ export function SchoolTable({
 											<p className="font-semibold text-neutral-800 dark:text-neutral-200">
 												{s.name}
 											</p>
-											<div className="mt-1 flex flex-wrap gap-1.5">
-												<StatusTag
-													label="Необъект."
-													value={s.a_school_with_bias}
-													tone="neutral"
-												/>
-											</div>
 											{s.address && (
 												<p className="mt-0.5 truncate text-xs text-neutral-400 dark:text-neutral-500">
 													{s.address}
@@ -508,9 +365,31 @@ export function SchoolTable({
 										</div>
 									</div>
 								</td>
-								{COLUMNS.map((col) => (
-									<React.Fragment key={col.label}>
-										{col.render(s, fr)}
+								<td className={TD}>{fmt(s.capacity)}</td>
+								<td className={TD}>{fmt(s.students)}</td>
+								<td className={TD}>{fmt(s.shift)}</td>
+								<td className={TD}>{fmt(s.workers)}</td>
+								<td className={TD}>{fmt(s.teachers)}</td>
+								<td className="py-4 px-3 text-center">
+									{url ? (
+										<a
+											href={url}
+											target="_blank"
+											rel="noopener noreferrer"
+											onClick={(e) => e.stopPropagation()}
+											className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+										>
+											{s.site}
+										</a>
+									) : (
+										<span className="text-neutral-400 dark:text-neutral-500">
+											—
+										</span>
+									)}
+								</td>
+								{extraColumns.map((col) => (
+									<React.Fragment key={col.key}>
+										{renderExtraCell(s, col)}
 									</React.Fragment>
 								))}
 							</tr>

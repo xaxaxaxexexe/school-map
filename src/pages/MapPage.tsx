@@ -66,6 +66,7 @@ export function MapPage() {
 	const {
 		districts,
 		schools: allSchools,
+		extraColumns,
 		loaded,
 	} = useAppSelector((s) => s.data);
 
@@ -212,6 +213,7 @@ export function MapPage() {
 				schools={schools}
 				selectedSchool={selectedSchool}
 				loading={!loaded}
+				extraColumns={extraColumns}
 				onSelectDistrict={handleSelectDistrictFromSidebar}
 				onSelectSchool={handleSelectSchool}
 				onBack={handleBack}

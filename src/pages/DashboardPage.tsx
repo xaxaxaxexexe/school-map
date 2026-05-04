@@ -1,22 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useDashboardData } from "@/lib/useDashboardData";
-import type { District, School } from "@/types";
+import {
+	useDashboardData,
+	type DashboardTotals,
+	type DistrictRow,
+} from "@/lib/useDashboardData";
+import type { District, ExtraColumn, School } from "@/types";
 import {
 	fmt,
+	fmtAggregatedExtra,
 	fmtDecimal,
-	fmtPercent,
-	fmtSecondShiftStudents,
-	schoolBuildingsCount,
+	fmtExtraValue,
 	schoolWord,
 	siteUrl,
-	yesNo,
 } from "@/lib/format";
 import { getMonitoringScoreColor } from "@/data/districts";
 import { SortArrow } from "@/components/ui/SortArrow";
 import { FillBar } from "@/components/ui/FillBar";
 import { BigStat } from "@/components/ui/BigStat";
-import { StatCell } from "@/components/ui/StatCell";
 import { TabBtn } from "@/components/ui/TabBtn";
 import { SchoolTable } from "@/components/dashboard/SchoolTable";
 import { ChechenGrid } from "@/components/dashboard/ChechenGrid";
@@ -34,7 +35,7 @@ function InfoItem({
 			<p className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500">
 				{label}
 			</p>
-			<p className="mt-0.5 break-words text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+			<p className="mt-0.5 wrap-break-word text-sm font-semibold text-neutral-800 dark:text-neutral-200">
 				{value ?? "—"}
 			</p>
 		</div>
@@ -46,75 +47,106 @@ function monitoringTitle(score: number | null): string {
 	return `Балл мониторинга: ${fmtDecimal(score)}`;
 }
 
-function DistrictSummaryPanel({ selected }: { selected: any }) {
+function InstitutionTypeRadios({
+	institutionTypes,
+	value,
+	onChange,
+}: {
+	institutionTypes: string[];
+	value: string | null;
+	onChange: (v: string | null) => void;
+}) {
+	if (institutionTypes.length === 0) return null;
+	const items: { label: string; v: string | null }[] = [
+		{ label: "Все учреждения", v: null },
+		...institutionTypes.map((t) => ({ label: t, v: t })),
+	];
+	return (
+		<div className="flex flex-wrap gap-2">
+			{items.map((it) => {
+				const active = it.v === value;
+				return (
+					<button
+						key={it.label}
+						onClick={() => onChange(it.v)}
+						className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+							active
+								? "bg-blue-600 text-white shadow-sm"
+								: "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+						}`}
+					>
+						{it.label}
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
+function DistrictSummaryPanel({
+	selected,
+	extraColumns,
+}: {
+	selected: DistrictRow;
+	extraColumns: ExtraColumn[];
+}) {
 	const score = selected.district.monitoring_score;
 	return (
 		<>
 			<h3 className="text-sm font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
 				{selected.shortName}
 			</h3>
-			<div className="grid grid-cols-2 gap-3">
-				{score != null ? (
-					<>
-						<BigStat
-							label="Балл мониторинга"
-							value={fmtDecimal(score)}
-							accent={getMonitoringScoreColor(score)}
-						/>
-						<BigStat
-							label="Заполненность"
-							value={`${selected.fillRate.toFixed(1)}%`}
-							accent={selected.fillRate > 100 ? "#ef4444" : "#10b981"}
-						/>
-					</>
-				) : (
-					<div className="col-span-2">
-						<BigStat
-							label="Уровень заполненности школ"
-							value={`${selected.fillRate.toFixed(1)}%`}
-							accent={selected.fillRate > 100 ? "#ef4444" : "#10b981"}
-						/>
-					</div>
+			<div className="grid grid-cols-3 gap-2">
+				{score != null && (
+					<BigStat
+						label="Балл мониторинга"
+						value={fmtDecimal(score)}
+						accent={getMonitoringScoreColor(score)}
+					/>
 				)}
-				<div className="col-span-2 grid grid-cols-2 gap-3">
+				<BigStat
+					label="Заполненность"
+					value={`${selected.fillRate.toFixed(1)}%`}
+					accent={selected.fillRate > 100 ? "#ef4444" : "#10b981"}
+				/>
+				<BigStat
+					label="Обучающихся"
+					value={selected.totalStudents.toLocaleString("ru")}
+					accent="#3b82f6"
+				/>
+				<BigStat
+					label="Мощность"
+					value={selected.totalCapacity.toLocaleString("ru")}
+					accent="#8b5cf6"
+				/>
+				<BigStat
+					label="Школ"
+					value={String(selected.schoolCount)}
+					accent="#10b981"
+				/>
+				<BigStat
+					label="Потребность"
+					value={selected.demand.toLocaleString("ru")}
+					accent={selected.demand > 0 ? "#ef4444" : "#10b981"}
+				/>
+				<BigStat
+					label="Педагогов"
+					value={selected.totalTeachers.toLocaleString("ru")}
+					accent="#f59e0b"
+				/>
+				<BigStat
+					label="Работников"
+					value={selected.totalWorkers.toLocaleString("ru")}
+					accent="#3b82f6"
+				/>
+				{extraColumns.map((col) => (
 					<BigStat
-						label="Обучающихся"
-						value={(selected.district.students ?? 0).toLocaleString("ru")}
-						accent="#3b82f6"
+						key={col.key}
+						label={col.label}
+						value={fmtAggregatedExtra(selected.extras[col.key], col.type)}
+						accent="#64748b"
 					/>
-					<BigStat
-						label="Мощность"
-						value={selected.totalCapacity.toLocaleString("ru")}
-						accent="#8b5cf6"
-					/>
-				</div>
-				<div className="col-span-2 grid grid-cols-2 gap-3">
-					<BigStat
-						label="Педагогов"
-						value={(selected.district.teachers ?? 0).toLocaleString("ru")}
-						accent="#f59e0b"
-					/>
-					<BigStat
-						label="Работников"
-						value={(selected.district.workers ?? 0).toLocaleString("ru")}
-						accent="#3b82f6"
-					/>
-				</div>
-				<div className="col-span-2 grid grid-cols-2 gap-3">
-					<BigStat
-						label="Школ"
-						value={String(selected.schoolCount)}
-						accent="#10b981"
-					/>
-					<BigStat
-						label="Потребность"
-						value={Math.max(
-							0,
-							selected.studentsWithCapacity - selected.totalCapacity,
-						).toLocaleString("ru")}
-						accent="#ef4444"
-					/>
-				</div>
+				))}
 			</div>
 			<div className="mt-2 hidden lg:block">
 				<Link
@@ -144,10 +176,12 @@ function DistrictSummaryPanel({ selected }: { selected: any }) {
 function SchoolDetailPanel({
 	school,
 	district,
+	extraColumns,
 	onBack,
 }: {
 	school: School;
 	district: District;
+	extraColumns: ExtraColumn[];
 	onBack: () => void;
 }) {
 	const url = siteUrl(school.site);
@@ -183,65 +217,33 @@ function SchoolDetailPanel({
 				<h3 className="mt-1 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
 					{school.name}
 				</h3>
+				{school.institution_type && (
+					<p className="mt-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+						{school.institution_type}
+					</p>
+				)}
 			</div>
-			<div className="grid grid-cols-2 gap-2">
+			<div className="grid grid-cols-3 gap-2">
 				<InfoItem label="Мощность" value={fmt(school.capacity)} />
 				<InfoItem label="Обучающихся" value={fmt(school.students)} />
-				<InfoItem label="1-4 классы" value={fmt(school.primary_students)} />
-				<InfoItem label="5-8 классы" value={fmt(school.middle_students)} />
-				<InfoItem label="9 класс" value={fmt(school.ninth_grade_students)} />
-				<InfoItem label="10 класс" value={fmt(school.tenth_grade_students)} />
-				<InfoItem
-					label="11 класс"
-					value={fmt(school.eleventh_grade_students)}
-				/>
-				<InfoItem
-					label="ЕГЭ хим/физ/био/мат/ИКТ"
-					value={fmtPercent(school.ege_stem_share)}
-				/>
 				<InfoItem label="Сменность" value={fmt(school.shift)} />
-				<InfoItem label="Во 2 смену" value={fmtSecondShiftStudents(school)} />
 				<InfoItem label="Работников" value={fmt(school.workers)} />
-				<InfoItem
-					label="Уч. / работника"
-					value={fmtDecimal(school.students_per_worker)}
-				/>
-				<InfoItem label="АУП" value={fmt(school.admin_staff)} />
-				<InfoItem
-					label="Доля АУП"
-					value={fmtPercent(school.admin_staff_share)}
-				/>
 				<InfoItem label="Педработников" value={fmt(school.teachers)} />
-				<InfoItem label="Иных работников" value={fmt(school.other_staff)} />
-				<InfoItem
-					label="Доля иных"
-					value={fmtPercent(school.other_staff_share)}
-				/>
-				<InfoItem
-					label="Зданий"
-					value={schoolBuildingsCount(school).toLocaleString("ru")}
-				/>
-				<InfoItem label="Капремонт проведен" value={yesNo(school.renovated)} />
-				<InfoItem
-					label="Требуется капремонт"
-					value={yesNo(school.needs_repairs)}
-				/>
-				<InfoItem label="Аварийное" value={yesNo(school.critical_condition)} />
-				<InfoItem label="ШНОР" value={yesNo(school.shkon)} />
-				<InfoItem
-					label="Необъективность"
-					value={yesNo(school.a_school_with_bias)}
-				/>
-				<div className="col-span-2">
+				<InfoItem label="Координаты" value={coords} />
+				<div className="col-span-3">
 					<InfoItem label="Адрес" value={school.address} />
 				</div>
-				<div className="col-span-2">
-					<InfoItem label="Координаты" value={coords} />
-				</div>
+				{extraColumns.map((col) => (
+					<InfoItem
+						key={col.key}
+						label={col.label}
+						value={fmtExtraValue(school.extras?.[col.key] ?? null, col.type)}
+					/>
+				))}
 				{school.coords && district.id != null && (
 					<Link
 						to={`/map?district=${district.id}&school=${encodeURIComponent(school.name)}`}
-						className="col-span-2 hidden items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.97] lg:flex"
+						className="col-span-3 hidden items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.97] lg:flex"
 					>
 						<svg
 							className="h-4 w-4"
@@ -264,13 +266,74 @@ function SchoolDetailPanel({
 						href={url}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="col-span-2 rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-[0.97]"
+						className="col-span-3 rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-[0.97]"
 					>
 						Открыть сайт школы
 					</a>
 				)}
 			</div>
 		</>
+	);
+}
+
+function RepublicTotalsGrid({
+	totals,
+	extraColumns,
+}: {
+	totals: DashboardTotals;
+	extraColumns: ExtraColumn[];
+}) {
+	return (
+		<div className="grid grid-cols-3 gap-2 p-4">
+			<BigStat
+				label="Заполненность школ"
+				value={`${totals.fillRate.toFixed(1)}%`}
+				accent={totals.fillRate > 100 ? "#ef4444" : "#10b981"}
+			/>
+			<BigStat
+				label="Обучающихся"
+				value={totals.students.toLocaleString("ru")}
+				accent="#f59e0b"
+			/>
+			<BigStat
+				label="Мест в школах"
+				value={totals.capacity.toLocaleString("ru")}
+				accent="#3b82f6"
+			/>
+			<BigStat
+				label="Потребность"
+				value={totals.demand.toLocaleString("ru")}
+				accent={totals.demand > 0 ? "#ef4444" : "#10b981"}
+			/>
+			<BigStat
+				label="Школ"
+				value={totals.schools.toLocaleString("ru")}
+				accent="#10b981"
+			/>
+			<BigStat
+				label="Районов"
+				value={totals.districts.toLocaleString("ru")}
+				accent="#8b5cf6"
+			/>
+			<BigStat
+				label="Педагогов"
+				value={totals.teachers.toLocaleString("ru")}
+				accent="#f59e0b"
+			/>
+			<BigStat
+				label="Работников"
+				value={totals.workers.toLocaleString("ru")}
+				accent="#3b82f6"
+			/>
+			{extraColumns.map((col) => (
+				<BigStat
+					key={col.key}
+					label={col.label}
+					value={fmtAggregatedExtra(totals.extras[col.key], col.type)}
+					accent="#64748b"
+				/>
+			))}
+		</div>
 	);
 }
 
@@ -291,6 +354,10 @@ export function DashboardPage() {
 		toggleDistrictSort,
 		schoolSort,
 		toggleSchoolSort,
+		institutionType,
+		setInstitutionType,
+		institutionTypes,
+		extraColumns,
 	} = useDashboardData();
 	const [expanded, setExpanded] = useState(false);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
@@ -338,31 +405,44 @@ export function DashboardPage() {
 			<div className="flex flex-col bg-neutral-50 dark:bg-neutral-900 lg:h-screen">
 				<div className="mx-auto flex min-h-0 w-full max-w-screen-sm flex-1 flex-col lg:mx-0 lg:max-w-none lg:flex-row">
 					<div className="flex min-w-0 flex-col p-4 lg:min-h-0 lg:flex-1 lg:p-6">
-						<div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
-							<button
-								onClick={() => setSelectedId(null)}
-								className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 active:scale-95"
-							>
-								<svg
-									className="h-4 w-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
+						<div className="mb-4 flex flex-col gap-3">
+							<div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
+								<button
+									onClick={() => setSelectedId(null)}
+									className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 active:scale-95"
 								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M15 19l-7-7 7-7"
-									/>
-								</svg>
-								<span className="hidden sm:inline">Все районы</span>
-								<span className="sm:hidden">Назад</span>
-							</button>
-							<div className="h-5 w-px bg-neutral-200 dark:bg-neutral-700" />
-							<h2 className="text-base font-bold tracking-tight text-neutral-900 dark:text-neutral-100 sm:text-lg">
-								{selected.shortName}
-							</h2>
+									<svg
+										className="h-4 w-4"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M15 19l-7-7 7-7"
+										/>
+									</svg>
+									<span className="hidden sm:inline">Все районы</span>
+									<span className="sm:hidden">Назад</span>
+								</button>
+								<div className="h-5 w-px bg-neutral-200 dark:bg-neutral-700" />
+								<h2 className="text-base font-bold tracking-tight text-neutral-900 dark:text-neutral-100 sm:text-lg">
+									{selected.shortName}
+								</h2>
+								<span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">
+									<span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+									{institutionType ?? "Все учреждения"}
+								</span>
+							</div>
+							{institutionTypes.length > 0 && (
+								<InstitutionTypeRadios
+									institutionTypes={institutionTypes}
+									value={institutionType}
+									onChange={setInstitutionType}
+								/>
+							)}
 						</div>
 
 						<div className="flex h-[60vh] flex-col overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30 lg:h-auto lg:min-h-0 lg:flex-1">
@@ -386,6 +466,7 @@ export function DashboardPage() {
 							<div className="flex-1 overflow-auto table-scroll">
 								<SchoolTable
 									schools={sortedSchools}
+									extraColumns={extraColumns}
 									sort={schoolSort}
 									onToggleSort={toggleSchoolSort}
 									selectedSchoolName={selectedSchool?.name ?? null}
@@ -395,15 +476,19 @@ export function DashboardPage() {
 						</div>
 					</div>
 
-					<div className="flex w-full shrink-0 flex-col gap-4 border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 lg:h-full lg:w-80 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:p-6">
+					<div className="flex w-full shrink-0 flex-col gap-4 border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 lg:h-full lg:w-96 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:p-6">
 						{selectedSchool ? (
 							<SchoolDetailPanel
 								school={selectedSchool}
 								district={selected.district}
+								extraColumns={extraColumns}
 								onBack={() => setSelectedSchool(null)}
 							/>
 						) : (
-							<DistrictSummaryPanel selected={selected} />
+							<DistrictSummaryPanel
+								selected={selected}
+								extraColumns={extraColumns}
+							/>
 						)}
 					</div>
 				</div>
@@ -482,6 +567,13 @@ export function DashboardPage() {
 				<div
 					className={`flex min-w-0 flex-col p-4 lg:min-h-0 lg:p-6 ${expanded ? "lg:flex-1" : "lg:flex-1 lg:w-1/2 xl:w-[62%] lg:shrink-0"}`}
 				>
+					<div className="mb-3">
+						<InstitutionTypeRadios
+							institutionTypes={institutionTypes}
+							value={institutionType}
+							onChange={setInstitutionType}
+						/>
+					</div>
 					<div className="flex h-[70vh] min-w-0 flex-col overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30 lg:h-auto lg:min-h-0 lg:flex-1">
 						<div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50/60 dark:bg-neutral-800/60 px-4 py-2.5 sm:px-5">
 							<div className="flex items-center gap-2 sm:gap-3">
@@ -529,12 +621,11 @@ export function DashboardPage() {
 						<div className="flex-1 overflow-auto table-scroll md:hidden">
 							<div className="divide-y divide-neutral-100 dark:divide-neutral-700">
 								{sorted.map((r, i) => {
-									const students = r.district.students ?? 0;
-									const workers = r.district.workers ?? 0;
 									const monitoringColor = getMonitoringScoreColor(
 										r.district.monitoring_score,
 									);
 									const isOpen = expandedCard === r.district.id;
+									const previewExtras = extraColumns.slice(0, 1);
 									return (
 										<div
 											key={`${r.district.id}-${r.district.name}`}
@@ -591,14 +682,6 @@ export function DashboardPage() {
 													<div className="grid grid-cols-3 gap-2 text-center text-[11px]">
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
 															<p className="font-bold text-neutral-800 dark:text-neutral-200">
-																{r.schoolCount}
-															</p>
-															<p className="text-neutral-400 dark:text-neutral-500">
-																Школ
-															</p>
-														</div>
-														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p className="font-bold text-neutral-800 dark:text-neutral-200">
 																{r.totalCapacity.toLocaleString("ru")}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
@@ -607,7 +690,7 @@ export function DashboardPage() {
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
 															<p className="font-bold text-neutral-800 dark:text-neutral-200">
-																{students.toLocaleString("ru")}
+																{r.totalStudents.toLocaleString("ru")}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
 																Обуч-ся
@@ -615,15 +698,15 @@ export function DashboardPage() {
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
 															<p className="font-bold text-neutral-800 dark:text-neutral-200">
-																{r.secondShiftStudents.toLocaleString("ru")}
+																{r.schoolCount}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
-																Во 2 смену
+																Школ
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
 															<p className="font-bold text-neutral-800 dark:text-neutral-200">
-																{workers.toLocaleString("ru")}
+																{r.totalWorkers.toLocaleString("ru")}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
 																Работников
@@ -631,40 +714,31 @@ export function DashboardPage() {
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
 															<p className="font-bold text-neutral-800 dark:text-neutral-200">
-																{r.buildings.toLocaleString("ru")}
+																{r.totalTeachers.toLocaleString("ru")}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
-																Зданий
+																Педагогов
 															</p>
 														</div>
-														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p
-																className={`font-bold ${r.repairBuildingsRate > 0 ? "text-orange-500 dark:text-orange-400" : "text-neutral-800 dark:text-neutral-200"}`}
+														{previewExtras.map((col) => (
+															<div
+																key={col.key}
+																className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2"
 															>
-																{`${r.repairBuildings} (${r.repairBuildingsRate.toFixed(1)}%)`}
-															</p>
-															<p className="text-neutral-400 dark:text-neutral-500">
-																Треб. ремонта
-															</p>
-														</div>
-														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p
-																className={`font-bold ${r.criticalBuildingsRate > 0 ? "text-orange-500 dark:text-orange-400" : "text-neutral-800 dark:text-neutral-200"}`}
-															>
-																{`${r.criticalBuildings} (${r.criticalBuildingsRate.toFixed(1)}%)`}
-															</p>
-															<p className="text-neutral-400 dark:text-neutral-500">
-																Аварийное
-															</p>
-														</div>
-														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p className="font-bold text-neutral-800 dark:text-neutral-200">
-																{r.formSchools.toLocaleString("ru")}
-															</p>
-															<p className="text-neutral-400 dark:text-neutral-500">
-																Строящиеся
-															</p>
-														</div>
+																<p className="font-bold text-neutral-800 dark:text-neutral-200">
+																	{fmtAggregatedExtra(
+																		r.extras[col.key],
+																		col.type,
+																	)}
+																</p>
+																<p
+																	className="text-neutral-400 dark:text-neutral-500 truncate"
+																	title={col.label}
+																>
+																	{col.label}
+																</p>
+															</div>
+														))}
 													</div>
 													{r.studentsWithCapacity > r.totalCapacity && (
 														<p className="mt-2 text-center text-xs font-semibold text-rose-500">
@@ -711,41 +785,11 @@ export function DashboardPage() {
 											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 											onClick={() => toggleDistrictSort("fillRate")}
 										>
-											Уровень заполненности школ
+											Заполненность
 											<SortArrow
 												active={districtSort.key === "fillRate"}
 												dir={
 													districtSort.key === "fillRate"
-														? districtSort.dir
-														: "asc"
-												}
-											/>
-										</th>
-										<th
-											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-											onClick={() => toggleDistrictSort("repairBuildingsRate")}
-										>
-											Зданий требуют кап. ремонта
-											<SortArrow
-												active={districtSort.key === "repairBuildingsRate"}
-												dir={
-													districtSort.key === "repairBuildingsRate"
-														? districtSort.dir
-														: "asc"
-												}
-											/>
-										</th>
-										<th
-											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-											onClick={() =>
-												toggleDistrictSort("criticalBuildingsRate")
-											}
-										>
-											Зданий в аварийном состоянии
-											<SortArrow
-												active={districtSort.key === "criticalBuildingsRate"}
-												dir={
-													districtSort.key === "criticalBuildingsRate"
 														? districtSort.dir
 														: "asc"
 												}
@@ -797,78 +841,6 @@ export function DashboardPage() {
 												</th>
 												<th
 													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() =>
-														toggleDistrictSort("secondShiftStudents")
-													}
-												>
-													Обуч. во 2 смену
-													<SortArrow
-														active={districtSort.key === "secondShiftStudents"}
-														dir={
-															districtSort.key === "secondShiftStudents"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("repairSchools")}
-												>
-													Школы, треб. ремонта
-													<SortArrow
-														active={districtSort.key === "repairSchools"}
-														dir={
-															districtSort.key === "repairSchools"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("repairCapacity")}
-												>
-													Места в таких
-													<SortArrow
-														active={districtSort.key === "repairCapacity"}
-														dir={
-															districtSort.key === "repairCapacity"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("formSchools")}
-												>
-													Строящиеся школы
-													<SortArrow
-														active={districtSort.key === "formSchools"}
-														dir={
-															districtSort.key === "formSchools"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("formCapacity")}
-												>
-													Места в строящихся
-													<SortArrow
-														active={districtSort.key === "formCapacity"}
-														dir={
-															districtSort.key === "formCapacity"
-																? districtSort.dir
-																: "asc"
-														}
-													/>
-												</th>
-												<th
-													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 													onClick={() => toggleDistrictSort("workers")}
 												>
 													Работников
@@ -883,18 +855,39 @@ export function DashboardPage() {
 												</th>
 												<th
 													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
-													onClick={() => toggleDistrictSort("buildings")}
+													onClick={() => toggleDistrictSort("teachers")}
 												>
-													Зданий
+													Педагогов
 													<SortArrow
-														active={districtSort.key === "buildings"}
+														active={districtSort.key === "teachers"}
 														dir={
-															districtSort.key === "buildings"
+															districtSort.key === "teachers"
 																? districtSort.dir
 																: "asc"
 														}
 													/>
 												</th>
+												{extraColumns.map((col) => {
+													const sk = `extra:${col.key}`;
+													return (
+														<th
+															key={col.key}
+															className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+															onClick={() => toggleDistrictSort(sk)}
+															title={col.label}
+														>
+															{col.label}
+															<SortArrow
+																active={districtSort.key === sk}
+																dir={
+																	districtSort.key === sk
+																		? districtSort.dir
+																		: "asc"
+																}
+															/>
+														</th>
+													);
+												})}
 											</>
 										)}
 									</tr>
@@ -928,16 +921,6 @@ export function DashboardPage() {
 											<td className="py-4 px-4 text-center">
 												<FillBar value={r.fillRate} />
 											</td>
-											<td
-												className={`py-4 px-4 text-center font-medium ${r.repairBuildingsRate > 0 ? "text-orange-500 dark:text-orange-400" : "text-neutral-700 dark:text-neutral-300"}`}
-											>
-												{r.repairBuildingsRate.toFixed(1)}%
-											</td>
-											<td
-												className={`py-4 px-4 text-center font-medium ${r.criticalBuildingsRate > 0 ? "text-orange-500 dark:text-orange-400" : "text-neutral-700 dark:text-neutral-300"}`}
-											>
-												{r.criticalBuildingsRate.toFixed(1)}%
-											</td>
 											{expanded && (
 												<>
 													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
@@ -947,29 +930,22 @@ export function DashboardPage() {
 														{r.totalCapacity.toLocaleString("ru")}
 													</td>
 													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{(r.district.students ?? 0).toLocaleString("ru")}
+														{r.totalStudents.toLocaleString("ru")}
 													</td>
 													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.secondShiftStudents.toLocaleString("ru")}
+														{r.totalWorkers.toLocaleString("ru")}
 													</td>
 													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.repairSchools.toLocaleString("ru")}
+														{r.totalTeachers.toLocaleString("ru")}
 													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.repairCapacity.toLocaleString("ru")}
-													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.formSchools.toLocaleString("ru")}
-													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.formCapacity.toLocaleString("ru")}
-													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{(r.district.workers ?? 0).toLocaleString("ru")}
-													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-														{r.buildings.toLocaleString("ru")}
-													</td>
+													{extraColumns.map((col) => (
+														<td
+															key={col.key}
+															className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300"
+														>
+															{fmtAggregatedExtra(r.extras[col.key], col.type)}
+														</td>
+													))}
 												</>
 											)}
 										</tr>
@@ -1047,105 +1023,10 @@ export function DashboardPage() {
 
 						{tab === "republic" ? (
 							<div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30">
-								<table className="hidden w-full border-collapse sm:table">
-									<tbody>
-										<tr className="border-b border-neutral-100 dark:border-neutral-700">
-											<StatCell
-												label="Уровень заполненности школ"
-												value={`${totals.fillRate.toFixed(1)}%`}
-												accent={totals.fillRate > 100 ? "#ef4444" : "#10b981"}
-											/>
-											<StatCell
-												label="Требует кап. ремонта"
-												value={`${totals.repairBuildingsRate.toFixed(1)}%`}
-												accent={
-													totals.repairBuildings > 0 ? "#f97316" : "#a3a3a3"
-												}
-												border
-											/>
-											<StatCell
-												label="В аварийном состоянии"
-												value={`${totals.criticalBuildingsRate.toFixed(1)}%`}
-												accent={
-													totals.criticalBuildings > 0 ? "#f97316" : "#a3a3a3"
-												}
-												border
-											/>
-										</tr>
-										<tr className="border-b border-neutral-100 dark:border-neutral-700">
-											<StatCell
-												label="Количество обучающихся"
-												value={totals.students.toLocaleString("ru")}
-												accent="#f59e0b"
-											/>
-											<StatCell
-												label="Обучающихся во 2 смену"
-												value={totals.secondShiftStudents.toLocaleString("ru")}
-												accent="#8b5cf6"
-												border
-											/>
-											<StatCell
-												label="Мест в школах"
-												value={totals.capacity.toLocaleString("ru")}
-												accent="#3b82f6"
-												border
-											/>
-										</tr>
-										<tr>
-											<StatCell
-												label="Потребность в местах"
-												value={totals.demand.toLocaleString("ru")}
-												accent={totals.demand > 0 ? "#ef4444" : "#10b981"}
-											/>
-											<StatCell
-												label="Мест в строящихся школах"
-												value={totals.formCapacity.toLocaleString("ru")}
-												accent="#8b5cf6"
-												border
-											/>
-											<StatCell
-												label="Мест в ремонтируемых школах"
-												value={totals.repairCapacity.toLocaleString("ru")}
-												accent="#ef4444"
-												border
-											/>
-										</tr>
-									</tbody>
-								</table>
-								<div className="grid grid-cols-2 gap-2 sm:hidden">
-									<BigStat
-										label="Заполненность школ"
-										value={`${totals.fillRate.toFixed(1)}%`}
-										accent={totals.fillRate > 100 ? "#ef4444" : "#10b981"}
-									/>
-									<BigStat
-										label="Обучающихся"
-										value={totals.students.toLocaleString("ru")}
-										accent="#f59e0b"
-									/>
-									<BigStat
-										label="Мест в школах"
-										value={totals.capacity.toLocaleString("ru")}
-										accent="#3b82f6"
-									/>
-									<BigStat
-										label="Потребность в местах"
-										value={totals.demand.toLocaleString("ru")}
-										accent={totals.demand > 0 ? "#ef4444" : "#10b981"}
-									/>
-									<BigStat
-										label="Треб. кап. ремонта"
-										value={`${totals.repairBuildingsRate.toFixed(1)}%`}
-										accent={totals.repairBuildings > 0 ? "#f97316" : "#a3a3a3"}
-									/>
-									<BigStat
-										label="Аварийное состояние"
-										value={`${totals.criticalBuildingsRate.toFixed(1)}%`}
-										accent={
-											totals.criticalBuildings > 0 ? "#f97316" : "#a3a3a3"
-										}
-									/>
-								</div>
+								<RepublicTotalsGrid
+									totals={totals}
+									extraColumns={extraColumns}
+								/>
 							</div>
 						) : (
 							<ChechenGrid rows={rows} onSelect={(id) => setSelectedId(id)} />
