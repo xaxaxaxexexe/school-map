@@ -195,7 +195,7 @@ function SchoolDetailPanel({
 		<>
 			<button
 				onClick={onBack}
-				className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 active:scale-95"
+				className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-900 active:scale-95"
 			>
 				<svg
 					className="h-4 w-4"
@@ -412,7 +412,7 @@ export function DashboardPage() {
 							<div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
 								<button
 									onClick={() => setSelectedId(null)}
-									className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 active:scale-95"
+									className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-900 active:scale-95"
 								>
 									<svg
 										className="h-4 w-4"
@@ -769,13 +769,13 @@ export function DashboardPage() {
 						</div>
 						<div className="hidden flex-1 overflow-auto table-scroll md:block">
 							<table className="w-full border-collapse text-[13px]">
-								<thead className="sticky top-0 z-30">
+								<thead className="sticky top-0 z-30 bg-[#1e3a5f]">
 									<tr className="bg-[#1e3a5f] text-white">
-										<th className="sticky left-0 z-40 w-14 bg-[#1e3a5f] py-3 pl-5 text-left text-[11px] font-semibold uppercase tracking-wider opacity-70">
+										<th className="sticky left-0 z-40 w-14 bg-[#1e3a5f] py-3 pl-5 text-left text-[11px] font-semibold uppercase tracking-wider text-white/70">
 											#
 										</th>
 										<th
-											className="sticky left-[55px] z-40 min-w-50 bg-[#1e3a5f] py-3 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											className="sticky left-8 z-40 min-w-50 bg-[#1e3a5f] py-3 pl-5 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.25)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.25)]"
 											onClick={() => toggleDistrictSort("name")}
 										>
 											Район
@@ -897,21 +897,22 @@ export function DashboardPage() {
 								<tbody>
 									{sorted.map((r, i) => {
 										const stickyBg =
-											i % 2 === 0
+											(i % 2 === 0
 												? "bg-white dark:bg-neutral-800"
-												: "bg-neutral-100 dark:bg-neutral-800";
+												: "bg-neutral-100 dark:bg-neutral-800") +
+											" group-hover:bg-blue-50 dark:group-hover:bg-blue-900";
 										return (
 										<tr
 											key={`${r.district.id}-${r.district.name}`}
 											onClick={() => setSelectedId(r.district.id!)}
-											className={`group cursor-pointer border-b border-neutral-100 dark:border-neutral-700 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 ${i % 2 === 0 ? "bg-white dark:bg-neutral-800" : "bg-neutral-50/50 dark:bg-neutral-800/50"}`}
+											className={`group cursor-pointer border-b border-neutral-100 dark:border-neutral-700 transition hover:bg-blue-50 dark:hover:bg-blue-900 ${i % 2 === 0 ? "bg-white dark:bg-neutral-800" : "bg-neutral-100 dark:bg-neutral-800"}`}
 										>
 											<td
-												className={`sticky left-0 z-10 w-14 ${stickyBg} py-4 pl-5 font-medium text-neutral-400 dark:text-neutral-500`}
+												className={`sticky left-0 z-10 w-14 ${stickyBg} py-4 pl-5 font-medium text-neutral-400 dark:text-neutral-500 transition-colors`}
 											>
 												{i + 1}
 											</td>
-											<td className={`sticky left-[55px] z-10 ${stickyBg} py-4 pr-6`}>
+											<td className={`sticky left-8 z-20 ${stickyBg} py-4 pl-5 pr-6 transition-colors shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.18)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.55)]`}>
 												<div className="flex items-center gap-3">
 													<span
 														title={monitoringTitle(r.district.monitoring_score)}
