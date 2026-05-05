@@ -230,13 +230,13 @@ export function SchoolTable({
 				onSelectSchool={onSelectSchool}
 			/>
 			<table className="hidden w-full border-collapse text-[13px] md:table">
-				<thead className="sticky top-0 z-10">
+				<thead className="sticky top-0 z-30">
 					<tr className="bg-[#1e3a5f] text-white">
-						<th className="w-12 py-3 pl-5 text-left text-[11px] font-semibold uppercase tracking-wider opacity-70">
+						<th className="sticky left-0 z-40 w-14 bg-[#1e3a5f] py-3 pl-5 text-left text-[11px] font-semibold uppercase tracking-wider opacity-70">
 							#
 						</th>
 						<th
-							className="min-w-55 py-3 pr-4 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+							className="sticky left-14 z-40 min-w-55 bg-[#1e3a5f] py-3 pr-4 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 							onClick={() => onToggleSort("name")}
 						>
 							Название
@@ -328,22 +328,32 @@ export function SchoolTable({
 					{schools.map((s, i) => {
 						const fr = calcFillRate(s.students, s.capacity);
 						const url = siteUrl(s.site);
+						const isSel = selectedSchoolName === s.name;
+						const stickyBg = isSel
+							? "bg-blue-50 dark:bg-blue-900"
+							: i % 2 === 0
+								? "bg-white dark:bg-neutral-800"
+								: "bg-neutral-100 dark:bg-neutral-800";
 						return (
 							<tr
 								key={i}
 								onClick={() => onSelectSchool?.(s)}
 								className={`cursor-pointer border-b border-neutral-100 dark:border-neutral-700 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 ${
-									selectedSchoolName === s.name
+									isSel
 										? "bg-blue-50 dark:bg-blue-900/30"
 										: i % 2 === 0
 											? "bg-white dark:bg-neutral-800"
 											: "bg-neutral-50/50 dark:bg-neutral-800/50"
 								}`}
 							>
-								<td className="py-4 pl-5 pr-3 font-medium text-neutral-400 dark:text-neutral-500">
+								<td
+									className={`sticky left-0 z-10 w-14 ${stickyBg} py-4 pl-5 pr-3 font-medium text-neutral-400 dark:text-neutral-500`}
+								>
 									{i + 1}
 								</td>
-								<td className="py-4 pl-2 pr-4">
+								<td
+									className={`sticky left-14 z-10 ${stickyBg} py-4 pl-2 pr-4`}
+								>
 									<div className="flex items-center gap-3">
 										<span
 											title={

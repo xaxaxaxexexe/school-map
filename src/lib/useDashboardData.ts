@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { DISTRICT_GEO } from "@/data/districts";
+import { DISTRICT_GEO, computeMonitoringMedian } from "@/data/districts";
 import type { District, ExtraColumn, School } from "@/types";
 
 export interface DistrictRow {
@@ -114,6 +114,11 @@ export function useDashboardData() {
 		if (!institutionType) return allSchools;
 		return allSchools.filter((s) => s.institution_type === institutionType);
 	}, [allSchools, institutionType]);
+
+	const monitoringMedian = useMemo(
+		() => computeMonitoringMedian(allDistricts),
+		[allDistricts],
+	);
 
 	const rows = useMemo<DistrictRow[]>(() => {
 		if (!loaded) return [];
@@ -363,5 +368,6 @@ export function useDashboardData() {
 		setInstitutionType,
 		institutionTypes,
 		extraColumns,
+		monitoringMedian,
 	};
 }

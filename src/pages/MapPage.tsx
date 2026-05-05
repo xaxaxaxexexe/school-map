@@ -3,7 +3,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
 import { YandexMap, type YandexMapHandle } from "@/components/YandexMap";
 import { Sidebar } from "@/components/Sidebar";
-import { DISTRICT_GEO, CHECHNYA_CENTER, CHECHNYA_ZOOM } from "@/data/districts";
+import {
+	DISTRICT_GEO,
+	CHECHNYA_CENTER,
+	CHECHNYA_ZOOM,
+	computeMonitoringMedian,
+} from "@/data/districts";
 import type { School } from "@/types";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
@@ -69,6 +74,11 @@ export function MapPage() {
 		extraColumns,
 		loaded,
 	} = useAppSelector((s) => s.data);
+
+	const monitoringMedian = useMemo(
+		() => computeMonitoringMedian(districts),
+		[districts],
+	);
 
 	const schools = useMemo(
 		() =>
@@ -230,6 +240,7 @@ export function MapPage() {
 				districts={districts}
 				onDistrictClick={handleSelectDistrictFromMap}
 				selectedDistrictId={selectedDistrictId}
+				monitoringMedian={monitoringMedian}
 			/>
 		</div>
 	);

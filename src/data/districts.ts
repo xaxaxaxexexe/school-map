@@ -160,11 +160,26 @@ const MONITORING_GREEN = "#10b981";
 
 export function getMonitoringScoreColor(
 	score: number | null | undefined,
+	median?: number | null,
 ): string {
 	if (score == null) return DEFAULT_COLOR;
 	if (score < 85) return MONITORING_RED;
-	if (score <= 86.1) return MONITORING_YELLOW;
-	return MONITORING_GREEN;
+	if (median != null && score >= median) return MONITORING_GREEN;
+	return MONITORING_YELLOW;
+}
+
+export function computeMonitoringMedian(
+	districts: { monitoring_score: number | null }[],
+): number | null {
+	const scores = districts
+		.map((d) => d.monitoring_score)
+		.filter((s): s is number => s != null)
+		.sort((a, b) => a - b);
+	if (scores.length === 0) return null;
+	const mid = Math.floor(scores.length / 2);
+	return scores.length % 2 === 0
+		? (scores[mid - 1]! + scores[mid]!) / 2
+		: scores[mid]!;
 }
 
 function findGeoByBorderName(borderName: string): DistrictGeo | null {
@@ -182,12 +197,13 @@ export function getDistrictColor(
 		name: string;
 		monitoring_score?: number | null;
 	}[],
+	median?: number | null,
 ): string {
 	const geo = findGeoByBorderName(borderName);
 	if (!geo) return DEFAULT_COLOR;
 	const district = districts?.find((d) => d.id === geo.id);
 	return district
-		? getMonitoringScoreColor(district.monitoring_score)
+		? getMonitoringScoreColor(district.monitoring_score, median)
 		: geo.color;
 }
 

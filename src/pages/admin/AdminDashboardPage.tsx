@@ -263,13 +263,46 @@ export function AdminDashboardPage() {
 						</p>
 						<ul className="list-inside list-disc space-y-1.5 pl-1">
 							<li>
-								<strong>Процентная</strong> — все значения в диапазоне [0, 1] и
-								среди них есть дробные. Агрегируется как среднее по району,
-								выводится в %.
+								<strong>Процентная</strong> — колонка с Excel-форматом{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5">
+									0.0%
+								</code>{" "}
+								(или <code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5">0%</code>),
+								либо если хотя бы в одной ячейке встречается знак{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5">
+									%
+								</code>
+								. Диапазон значений неважен — могут быть и{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5">
+									0.85
+								</code>
+								, и{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5">
+									85
+								</code>
+								, и{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5">
+									"85%"
+								</code>
+								. Агрегируется как среднее по району, выводится в %.
 							</li>
 							<li>
-								<strong>Булевая</strong> — значения «Да/Нет», «+/−», «истина»
-								или числа 0/1. Агрегируется как доля «Да», выводится в %.
+								<strong>Булевая</strong> — заполняйте единообразно{" "}
+								<strong>«Да» / «Нет»</strong>. Также распознаются{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5">
+									+/−
+								</code>
+								,{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5">
+									true/false
+								</code>
+								,{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5">
+									0/1
+								</code>
+								. <strong>Пустая ячейка считается за «Нет»</strong> — это влияет
+								на знаменатель агрегата. Агрегируется как доля «Да», выводится в
+								%.
 							</li>
 							<li>
 								<strong>Числовая</strong> — остальные числа. Агрегируется как
@@ -317,7 +350,9 @@ export function AdminDashboardPage() {
 						</p>
 						<p>
 							«Итоговый балл в мотивирующем мониторинге» влияет на цвет района:
-							красный {"<"} 85, жёлтый 85–86.1, зелёный {">"} 86.1.
+							красный {"<"} 85, жёлтый от 85 до медианы (не включая), зелёный
+							{" "}≥ медианы. Медиана считается по баллам всех районов и
+							пересчитывается при загрузке новых данных.
 						</p>
 					</div>
 				</section>

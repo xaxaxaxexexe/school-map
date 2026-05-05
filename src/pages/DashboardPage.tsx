@@ -86,9 +86,11 @@ function InstitutionTypeRadios({
 function DistrictSummaryPanel({
 	selected,
 	extraColumns,
+	monitoringMedian,
 }: {
 	selected: DistrictRow;
 	extraColumns: ExtraColumn[];
+	monitoringMedian: number | null;
 }) {
 	const score = selected.district.monitoring_score;
 	return (
@@ -101,7 +103,7 @@ function DistrictSummaryPanel({
 					<BigStat
 						label="Балл мониторинга"
 						value={fmtDecimal(score)}
-						accent={getMonitoringScoreColor(score)}
+						accent={getMonitoringScoreColor(score, monitoringMedian)}
 					/>
 				)}
 				<BigStat
@@ -358,6 +360,7 @@ export function DashboardPage() {
 		setInstitutionType,
 		institutionTypes,
 		extraColumns,
+		monitoringMedian,
 	} = useDashboardData();
 	const [expanded, setExpanded] = useState(false);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
@@ -488,6 +491,7 @@ export function DashboardPage() {
 							<DistrictSummaryPanel
 								selected={selected}
 								extraColumns={extraColumns}
+								monitoringMedian={monitoringMedian}
 							/>
 						)}
 					</div>
@@ -623,6 +627,7 @@ export function DashboardPage() {
 								{sorted.map((r, i) => {
 									const monitoringColor = getMonitoringScoreColor(
 										r.district.monitoring_score,
+										monitoringMedian,
 									);
 									const isOpen = expandedCard === r.district.id;
 									const previewExtras = extraColumns.slice(0, 1);
@@ -764,13 +769,13 @@ export function DashboardPage() {
 						</div>
 						<div className="hidden flex-1 overflow-auto table-scroll md:block">
 							<table className="w-full border-collapse text-[13px]">
-								<thead className="sticky top-0 z-10">
+								<thead className="sticky top-0 z-30">
 									<tr className="bg-[#1e3a5f] text-white">
-										<th className="w-12 py-3 pl-5 text-left text-[11px] font-semibold uppercase tracking-wider opacity-70">
+										<th className="sticky left-0 z-40 w-14 bg-[#1e3a5f] py-3 pl-5 text-left text-[11px] font-semibold uppercase tracking-wider opacity-70">
 											#
 										</th>
 										<th
-											className="min-w-50 py-3 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											className="sticky left-14 z-40 min-w-50 bg-[#1e3a5f] py-3 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 											onClick={() => toggleDistrictSort("name")}
 										>
 											Район
@@ -890,16 +895,23 @@ export function DashboardPage() {
 									</tr>
 								</thead>
 								<tbody>
-									{sorted.map((r, i) => (
+									{sorted.map((r, i) => {
+										const stickyBg =
+											i % 2 === 0
+												? "bg-white dark:bg-neutral-800"
+												: "bg-neutral-100 dark:bg-neutral-800";
+										return (
 										<tr
 											key={`${r.district.id}-${r.district.name}`}
 											onClick={() => setSelectedId(r.district.id!)}
 											className={`group cursor-pointer border-b border-neutral-100 dark:border-neutral-700 transition hover:bg-blue-50 dark:hover:bg-blue-900/30 ${i % 2 === 0 ? "bg-white dark:bg-neutral-800" : "bg-neutral-50/50 dark:bg-neutral-800/50"}`}
 										>
-											<td className="py-4 pl-5 font-medium text-neutral-400 dark:text-neutral-500">
+											<td
+												className={`sticky left-0 z-10 w-14 ${stickyBg} py-4 pl-5 font-medium text-neutral-400 dark:text-neutral-500`}
+											>
 												{i + 1}
 											</td>
-											<td className="py-4 pr-6">
+											<td className={`sticky left-14 z-10 ${stickyBg} py-4 pr-6`}>
 												<div className="flex items-center gap-3">
 													<span
 														title={monitoringTitle(r.district.monitoring_score)}
@@ -907,6 +919,7 @@ export function DashboardPage() {
 														style={{
 															backgroundColor: getMonitoringScoreColor(
 																r.district.monitoring_score,
+																monitoringMedian,
 															),
 														}}
 													/>
@@ -943,7 +956,8 @@ export function DashboardPage() {
 													</td>
 												))}
 										</tr>
-									))}
+										);
+									})}
 								</tbody>
 							</table>
 						</div>
@@ -1023,7 +1037,11 @@ export function DashboardPage() {
 								/>
 							</div>
 						) : (
-							<ChechenGrid rows={rows} onSelect={(id) => setSelectedId(id)} />
+							<ChechenGrid
+								rows={rows}
+								onSelect={(id) => setSelectedId(id)}
+								monitoringMedian={monitoringMedian}
+							/>
 						)}
 					</div>
 				)}
