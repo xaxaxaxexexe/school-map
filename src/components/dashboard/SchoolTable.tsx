@@ -236,7 +236,7 @@ export function SchoolTable({
 							#
 						</th>
 						<th
-							className="sticky left-14 z-40 min-w-55 bg-[#1e3a5f] py-3 pr-4 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+							className="sticky left-[55px] z-40 min-w-55 bg-[#1e3a5f] py-3 pr-4 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 							onClick={() => onToggleSort("name")}
 						>
 							Название
@@ -352,7 +352,7 @@ export function SchoolTable({
 									{i + 1}
 								</td>
 								<td
-									className={`sticky left-14 z-10 ${stickyBg} py-4 pl-2 pr-4`}
+									className={`sticky left-[55px] z-10 ${stickyBg} py-4 pl-2 pr-4`}
 								>
 									<div className="flex items-center gap-3">
 										<span

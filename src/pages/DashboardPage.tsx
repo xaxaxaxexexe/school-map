@@ -775,7 +775,7 @@ export function DashboardPage() {
 											#
 										</th>
 										<th
-											className="sticky left-14 z-40 min-w-50 bg-[#1e3a5f] py-3 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											className="sticky left-[55px] z-40 min-w-50 bg-[#1e3a5f] py-3 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 											onClick={() => toggleDistrictSort("name")}
 										>
 											Район
@@ -911,7 +911,7 @@ export function DashboardPage() {
 											>
 												{i + 1}
 											</td>
-											<td className={`sticky left-14 z-10 ${stickyBg} py-4 pr-6`}>
+											<td className={`sticky left-[55px] z-10 ${stickyBg} py-4 pr-6`}>
 												<div className="flex items-center gap-3">
 													<span
 														title={monitoringTitle(r.district.monitoring_score)}
