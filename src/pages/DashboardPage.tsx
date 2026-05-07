@@ -112,7 +112,7 @@ function DistrictSummaryPanel({
 					accent={selected.fillRate > 100 ? "#ef4444" : "#10b981"}
 				/>
 				<BigStat
-					label="Обучающихся"
+					label="Кол-во обучающихся"
 					value={selected.totalStudents.toLocaleString("ru")}
 					accent="#3b82f6"
 				/>
@@ -132,12 +132,12 @@ function DistrictSummaryPanel({
 					accent={selected.demand > 0 ? "#ef4444" : "#10b981"}
 				/>
 				<BigStat
-					label="Педагогов"
+					label="Кол-во педагогов"
 					value={selected.totalTeachers.toLocaleString("ru")}
 					accent="#f59e0b"
 				/>
 				<BigStat
-					label="Работников"
+					label="Кол-во работников"
 					value={selected.totalWorkers.toLocaleString("ru")}
 					accent="#3b82f6"
 				/>
@@ -227,9 +227,9 @@ function SchoolDetailPanel({
 			</div>
 			<div className="grid grid-cols-3 gap-2">
 				<InfoItem label="Мощность" value={fmt(school.capacity)} />
-				<InfoItem label="Обучающихся" value={fmt(school.students)} />
+				<InfoItem label="Кол-во обучающихся" value={fmt(school.students)} />
 				<InfoItem label="Сменность" value={fmt(school.shift)} />
-				<InfoItem label="Работников" value={fmt(school.workers)} />
+				<InfoItem label="Кол-во работников" value={fmt(school.workers)} />
 				<InfoItem label="Педработников" value={fmt(school.teachers)} />
 				<InfoItem label="Координаты" value={coords} />
 				<div className="col-span-3">
@@ -293,7 +293,7 @@ function RepublicTotalsGrid({
 				accent={totals.fillRate > 100 ? "#ef4444" : "#10b981"}
 			/>
 			<BigStat
-				label="Обучающихся"
+				label="Кол-во обучающихся"
 				value={totals.students.toLocaleString("ru")}
 				accent="#f59e0b"
 			/>
@@ -318,12 +318,12 @@ function RepublicTotalsGrid({
 				accent="#8b5cf6"
 			/>
 			<BigStat
-				label="Педагогов"
+				label="Кол-во педагогов"
 				value={totals.teachers.toLocaleString("ru")}
 				accent="#f59e0b"
 			/>
 			<BigStat
-				label="Работников"
+				label="Кол-во работников"
 				value={totals.workers.toLocaleString("ru")}
 				accent="#3b82f6"
 			/>
@@ -714,7 +714,7 @@ export function DashboardPage() {
 																{r.totalWorkers.toLocaleString("ru")}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
-																Работников
+																Кол-во работников
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
@@ -722,7 +722,7 @@ export function DashboardPage() {
 																{r.totalTeachers.toLocaleString("ru")}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
-																Педагогов
+																Кол-во педагогов
 															</p>
 														</div>
 														{previewExtras.map((col) => (
@@ -832,7 +832,7 @@ export function DashboardPage() {
 											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 											onClick={() => toggleDistrictSort("students")}
 										>
-											Обучающихся
+											Кол-во обучающихся
 											<SortArrow
 												active={districtSort.key === "students"}
 												dir={
@@ -846,7 +846,7 @@ export function DashboardPage() {
 											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 											onClick={() => toggleDistrictSort("workers")}
 										>
-											Работников
+											Кол-во работников
 											<SortArrow
 												active={districtSort.key === "workers"}
 												dir={
@@ -860,7 +860,7 @@ export function DashboardPage() {
 											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 											onClick={() => toggleDistrictSort("teachers")}
 										>
-											Педагогов
+											Кол-во педагогов
 											<SortArrow
 												active={districtSort.key === "teachers"}
 												dir={

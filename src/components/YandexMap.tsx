@@ -307,17 +307,17 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 <b style="font-size:14px">${school.name}</b>
 ${school.capacity != null ? `<br>Мощность: ${school.capacity.toLocaleString("ru")}` : ""}
 ${school.shift != null ? `<br>Сменность: ${school.shift}` : ""}
-${school.students != null ? `<br>Обучающихся: ${school.students.toLocaleString("ru")}` : ""}
-${school.teachers != null ? `<br>Педагогов: ${school.teachers.toLocaleString("ru")}` : ""}
-${school.workers != null ? `<br>Работников: ${school.workers.toLocaleString("ru")}` : ""}
+${school.students != null ? `<br>Кол-во обучающихся: ${school.students.toLocaleString("ru")}` : ""}
+${school.teachers != null ? `<br>Кол-во педагогов: ${school.teachers.toLocaleString("ru")}` : ""}
+${school.workers != null ? `<br>Кол-во работников: ${school.workers.toLocaleString("ru")}` : ""}
 </div>`,
 					balloonContentHeader: `<b style="font-size:14px">${school.name}</b>`,
 					balloonContentBody: `<div style="font-size:13px;line-height:1.6">
 ${school.capacity != null ? `Мощность: ${school.capacity.toLocaleString("ru")}<br>` : ""}
 ${school.shift != null ? `Сменность: ${school.shift}<br>` : ""}
-${school.students != null ? `Обучающихся: ${school.students.toLocaleString("ru")}<br>` : ""}
-${school.teachers != null ? `Педагогов: ${school.teachers.toLocaleString("ru")}<br>` : ""}
-${school.workers != null ? `Работников: ${school.workers.toLocaleString("ru")}<br>` : ""}
+${school.students != null ? `Кол-во обучающихся: ${school.students.toLocaleString("ru")}<br>` : ""}
+${school.teachers != null ? `Кол-во педагогов: ${school.teachers.toLocaleString("ru")}<br>` : ""}
+${school.workers != null ? `Кол-во работников: ${school.workers.toLocaleString("ru")}<br>` : ""}
 ${school.institution_type ? `Тип: ${school.institution_type}<br>` : ""}
 ${school.address ? `Адрес: ${school.address}<br>` : ""}
 <a href="#" onclick="window.__selectSchool('${school.name.replace(/'/g, "\\'")}');return false" style="display:inline-block;margin-top:6px;padding:4px 12px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500">Выбрать</a>

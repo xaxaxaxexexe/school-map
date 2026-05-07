@@ -160,7 +160,7 @@ function MobileSchoolCards({
 											{fmt(s.workers)}
 										</p>
 										<p className="text-neutral-400 dark:text-neutral-500">
-											Работников
+											Кол-во работников
 										</p>
 									</div>
 									<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
@@ -168,7 +168,7 @@ function MobileSchoolCards({
 											{fmt(s.teachers)}
 										</p>
 										<p className="text-neutral-400 dark:text-neutral-500">
-											Педагогов
+											Кол-во педагогов
 										</p>
 									</div>
 									{extraColumns.slice(0, 4).map((col) => (
@@ -259,7 +259,7 @@ export function SchoolTable({
 							className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
 							onClick={() => onToggleSort("students")}
 						>
-							Обучающихся
+							Кол-во обучающихся
 							<SortArrow
 								active={sort.key === "students"}
 								dir={sort.key === "students" ? sort.dir : "asc"}
@@ -279,7 +279,7 @@ export function SchoolTable({
 							className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
 							onClick={() => onToggleSort("workers")}
 						>
-							Работников
+							Кол-во работников
 							<SortArrow
 								active={sort.key === "workers"}
 								dir={sort.key === "workers" ? sort.dir : "asc"}
@@ -289,7 +289,7 @@ export function SchoolTable({
 							className={`${TH} cursor-pointer select-none hover:text-blue-200 transition`}
 							onClick={() => onToggleSort("teachers")}
 						>
-							Педагогов
+							Кол-во педагогов
 							<SortArrow
 								active={sort.key === "teachers"}
 								dir={sort.key === "teachers" ? sort.dir : "asc"}

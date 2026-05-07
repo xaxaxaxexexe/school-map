@@ -268,17 +268,17 @@ function DistrictDetail({
 				</div>
 				<div className="mt-5 grid grid-cols-3 gap-2">
 					<StatCard
-						label="Обучающихся"
+						label="Кол-во обучающихся"
 						value={district.students}
 						color="#3b82f6"
 					/>
 					<StatCard
-						label="Педагогов"
+						label="Кол-во педагогов"
 						value={district.teachers}
 						color="#8b5cf6"
 					/>
 					<StatCard
-						label="Работников"
+						label="Кол-во работников"
 						value={district.workers}
 						color="#f59e0b"
 					/>
@@ -473,21 +473,21 @@ function SchoolDetail({
 						)}
 						{school.students != null && (
 							<MiniStat
-								label="Обучающихся"
+								label="Кол-во обучающихся"
 								value={school.students.toLocaleString("ru")}
 								color="#3b82f6"
 							/>
 						)}
 						{school.teachers != null && (
 							<MiniStat
-								label="Педагогов"
+								label="Кол-во педагогов"
 								value={school.teachers.toLocaleString("ru")}
 								color="#8b5cf6"
 							/>
 						)}
 						{school.workers != null && (
 							<MiniStat
-								label="Работников"
+								label="Кол-во работников"
 								value={school.workers.toLocaleString("ru")}
 								color="#10b981"
 							/>

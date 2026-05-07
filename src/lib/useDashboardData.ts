@@ -71,7 +71,6 @@ function aggregateExtra(
 		return sum;
 	}
 
-	// percent: average of numeric values
 	let sum = 0;
 	let n = 0;
 	for (const v of vals) {
@@ -155,17 +154,14 @@ export function useDashboardData() {
 
 				const extras: Record<string, number | null> = {};
 				for (const col of extraColumns) {
-					let val = aggregateExtra(col, schools);
-					if (val === null && !institutionType) {
-						const fallback = district.district_row_extras?.[col.key];
-						if (fallback != null) {
-							if (typeof fallback === "boolean") {
-								val = fallback ? 1 : 0;
-							} else {
-								val = fallback;
-							}
+					let val: number | null = null;
+					if (!institutionType) {
+						const rowVal = district.district_row_extras?.[col.key];
+						if (rowVal != null) {
+							val = typeof rowVal === "boolean" ? (rowVal ? 1 : 0) : rowVal;
 						}
 					}
+					if (val === null) val = aggregateExtra(col, schools);
 					extras[col.key] = val;
 				}
 
@@ -260,25 +256,23 @@ export function useDashboardData() {
 
 		const extras: Record<string, number | null> = {};
 		for (const col of extraColumns) {
-			let val = aggregateExtra(col, filteredSchools);
-			if (val === null && !institutionType) {
-				// Republic-level fallback: average / sum of district_row_extras across districts when no schools have data
-				const fallbackVals: number[] = [];
+			let val: number | null = null;
+			if (!institutionType) {
+				const districtVals: number[] = [];
 				for (const d of rows) {
 					const fb = d.district.district_row_extras?.[col.key];
 					if (fb != null) {
-						fallbackVals.push(typeof fb === "boolean" ? (fb ? 1 : 0) : fb);
+						districtVals.push(typeof fb === "boolean" ? (fb ? 1 : 0) : fb);
 					}
 				}
-				if (fallbackVals.length > 0) {
-					if (col.type === "numeric") {
-						val = fallbackVals.reduce((a, b) => a + b, 0);
-					} else {
-						val =
-							fallbackVals.reduce((a, b) => a + b, 0) / fallbackVals.length;
-					}
+				if (districtVals.length > 0) {
+					val =
+						col.type === "numeric"
+							? districtVals.reduce((a, b) => a + b, 0)
+							: districtVals.reduce((a, b) => a + b, 0) / districtVals.length;
 				}
 			}
+			if (val === null) val = aggregateExtra(col, filteredSchools);
 			extras[col.key] = val;
 		}
 
