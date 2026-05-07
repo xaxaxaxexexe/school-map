@@ -71,8 +71,12 @@ function aggregateExtra(
 	if (col.type === "numeric") {
 		let sum = 0;
 		for (const v of vals) {
-			if (typeof v === "number") sum += v;
-			else if (typeof v === "boolean") sum += v ? 1 : 0;
+			if (typeof v === "boolean") {
+				sum += v ? 1 : 0;
+			} else if (typeof v === "number") {
+				if (!Number.isInteger(v)) return null;
+				sum += v;
+			}
 		}
 		return sum;
 	}

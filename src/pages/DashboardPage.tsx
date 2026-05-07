@@ -122,7 +122,7 @@ function DistrictSummaryPanel({
 					accent="#8b5cf6"
 				/>
 				<BigStat
-					label="Школ"
+					label="Кол-во учреждений"
 					value={String(selected.schoolCount)}
 					accent="#10b981"
 				/>
@@ -308,7 +308,7 @@ function RepublicTotalsGrid({
 				accent={totals.demand > 0 ? "#ef4444" : "#10b981"}
 			/>
 			<BigStat
-				label="Школ"
+				label="Кол-во учреждений"
 				value={totals.schools.toLocaleString("ru")}
 				accent="#10b981"
 			/>
@@ -706,7 +706,7 @@ export function DashboardPage() {
 																{r.schoolCount}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
-																Школ
+																Кол-во учреждений
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
@@ -804,7 +804,7 @@ export function DashboardPage() {
 											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
 											onClick={() => toggleDistrictSort("schoolCount")}
 										>
-											Школ
+											Кол-во учреждений
 											<SortArrow
 												active={districtSort.key === "schoolCount"}
 												dir={

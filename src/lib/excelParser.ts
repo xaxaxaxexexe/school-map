@@ -149,10 +149,22 @@ function isNumericString(s: string): boolean {
 	return /^-?[\d\s]+([.,]\d+)?%?$/.test(s.trim());
 }
 
+function looksLikeRatioByLabel(label: string): boolean {
+	const s = label.toLowerCase().replace(/ё/g, "е");
+	return (
+		/\bна\s+\d+\b/.test(s) ||
+		/\bна\s+(одного|одну|одно)\b/.test(s) ||
+		/\bдоля\b/.test(s) ||
+		/\bкоэффициент\b/.test(s) ||
+		/\bсредн/.test(s)
+	);
+}
+
 function classifyExtra(
 	values: Cell[],
 	hasPercentFormat: boolean,
 	hasDecimalFormat: boolean,
+	label: string,
 ): ExtraType | null {
 	const non = values.filter((v) => v != null && v !== "");
 	if (non.length === 0) return null;
@@ -194,6 +206,7 @@ function classifyExtra(
 		return "boolean";
 	}
 	if (numbers.some((n) => n !== Math.floor(n))) return "ratio";
+	if (looksLikeRatioByLabel(label)) return "ratio";
 	return "numeric";
 }
 
@@ -417,6 +430,7 @@ function parseFlat(
 			values,
 			percentFormatCols.has(def.idx),
 			decimalFormatCols.has(def.idx),
+			def.label,
 		);
 		if (type === null) continue;
 		extraCols.push({ key: def.key, label: def.label, type });
