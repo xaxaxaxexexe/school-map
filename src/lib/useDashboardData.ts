@@ -172,7 +172,9 @@ export function useDashboardData() {
 						if (rowVal != null) {
 							val = typeof rowVal === "boolean" ? (rowVal ? 1 : 0) : rowVal;
 						}
-						if (val === null) val = aggregateExtra(col, schools);
+						if (val === null && canAggregateInFilterMode(col.type)) {
+							val = aggregateExtra(col, schools);
+						}
 					}
 					extras[col.key] = val;
 				}
@@ -304,7 +306,7 @@ export function useDashboardData() {
 						val = typeof repVal === "boolean" ? (repVal ? 1 : 0) : repVal;
 					}
 				}
-				if (val === null) {
+				if (val === null && canAggregateInFilterMode(col.type)) {
 					const districtVals: number[] = [];
 					for (const d of rows) {
 						const fb = d.district.district_row_extras?.[col.key];
@@ -319,8 +321,8 @@ export function useDashboardData() {
 								: districtVals.reduce((a, b) => a + b, 0) /
 									districtVals.length;
 					}
+					if (val === null) val = aggregateExtra(col, filteredSchools);
 				}
-				if (val === null) val = aggregateExtra(col, filteredSchools);
 			}
 			extras[col.key] = val;
 		}
