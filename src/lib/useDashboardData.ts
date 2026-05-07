@@ -3,6 +3,12 @@ import { useAppSelector } from "@/store/hooks";
 import { DISTRICT_GEO, computeMonitoringMedian } from "@/data/districts";
 import type { District, ExtraColumn, School } from "@/types";
 
+// In filter modes (institutionType !== null) percent and ratio columns can't be
+// meaningfully re-aggregated from school rows (no weights), so we drop them.
+function canAggregateInFilterMode(type: ExtraColumn["type"]): boolean {
+	return type === "numeric" || type === "boolean";
+}
+
 export interface DistrictRow {
 	district: District;
 	shortName: string;
@@ -71,6 +77,7 @@ function aggregateExtra(
 		return sum;
 	}
 
+	// percent and ratio: unweighted mean across schools (best-effort fallback)
 	let sum = 0;
 	let n = 0;
 	for (const v of vals) {
@@ -93,6 +100,7 @@ export function useDashboardData() {
 		schools: allSchools,
 		extraColumns,
 		institutionTypes,
+		republicTotals,
 		loaded,
 	} = useAppSelector((s) => s.data);
 
@@ -155,13 +163,17 @@ export function useDashboardData() {
 				const extras: Record<string, number | null> = {};
 				for (const col of extraColumns) {
 					let val: number | null = null;
-					if (!institutionType) {
+					if (institutionType) {
+						if (canAggregateInFilterMode(col.type)) {
+							val = aggregateExtra(col, schools);
+						}
+					} else {
 						const rowVal = district.district_row_extras?.[col.key];
 						if (rowVal != null) {
 							val = typeof rowVal === "boolean" ? (rowVal ? 1 : 0) : rowVal;
 						}
+						if (val === null) val = aggregateExtra(col, schools);
 					}
-					if (val === null) val = aggregateExtra(col, schools);
 					extras[col.key] = val;
 				}
 
@@ -241,38 +253,75 @@ export function useDashboardData() {
 	}, [rows, districtQuery, districtSort]);
 
 	const totals = useMemo<DashboardTotals>(() => {
-		const students = rows.reduce((s, r) => s + r.totalStudents, 0);
+		const useRepublicRow = !institutionType && republicTotals !== null;
+
+		const sumStudents = rows.reduce((s, r) => s + r.totalStudents, 0);
+		const sumCapacity = rows.reduce((s, r) => s + r.totalCapacity, 0);
+		const sumTeachers = rows.reduce((s, r) => s + r.totalTeachers, 0);
+		const sumWorkers = rows.reduce((s, r) => s + r.totalWorkers, 0);
 		const studentsWithCapacity = rows.reduce(
 			(s, r) => s + r.studentsWithCapacity,
 			0,
 		);
-		const capacity = rows.reduce((s, r) => s + r.totalCapacity, 0);
-		const teachers = rows.reduce((s, r) => s + r.totalTeachers, 0);
-		const workers = rows.reduce((s, r) => s + r.totalWorkers, 0);
+
+		const students =
+			useRepublicRow && republicTotals?.students != null
+				? republicTotals.students
+				: sumStudents;
+		const capacity =
+			useRepublicRow && republicTotals?.capacity != null
+				? republicTotals.capacity
+				: sumCapacity;
+		const teachers =
+			useRepublicRow && republicTotals?.teachers != null
+				? republicTotals.teachers
+				: sumTeachers;
+		const workers =
+			useRepublicRow && republicTotals?.workers != null
+				? republicTotals.workers
+				: sumWorkers;
 		const schools = rows.reduce((s, r) => s + r.schoolCount, 0);
+
+		const fillRateBaseStudents =
+			useRepublicRow && republicTotals?.students != null
+				? students
+				: studentsWithCapacity;
 		const fillRate =
-			capacity > 0 ? (studentsWithCapacity / capacity) * 100 : 0;
-		const demand = Math.max(0, studentsWithCapacity - capacity);
+			capacity > 0 ? (fillRateBaseStudents / capacity) * 100 : 0;
+		const demand = Math.max(0, fillRateBaseStudents - capacity);
 
 		const extras: Record<string, number | null> = {};
 		for (const col of extraColumns) {
 			let val: number | null = null;
-			if (!institutionType) {
-				const districtVals: number[] = [];
-				for (const d of rows) {
-					const fb = d.district.district_row_extras?.[col.key];
-					if (fb != null) {
-						districtVals.push(typeof fb === "boolean" ? (fb ? 1 : 0) : fb);
+			if (institutionType) {
+				if (canAggregateInFilterMode(col.type)) {
+					val = aggregateExtra(col, filteredSchools);
+				}
+			} else {
+				if (useRepublicRow) {
+					const repVal = republicTotals?.extras?.[col.key];
+					if (repVal != null) {
+						val = typeof repVal === "boolean" ? (repVal ? 1 : 0) : repVal;
 					}
 				}
-				if (districtVals.length > 0) {
-					val =
-						col.type === "numeric"
-							? districtVals.reduce((a, b) => a + b, 0)
-							: districtVals.reduce((a, b) => a + b, 0) / districtVals.length;
+				if (val === null) {
+					const districtVals: number[] = [];
+					for (const d of rows) {
+						const fb = d.district.district_row_extras?.[col.key];
+						if (fb != null) {
+							districtVals.push(typeof fb === "boolean" ? (fb ? 1 : 0) : fb);
+						}
+					}
+					if (districtVals.length > 0) {
+						val =
+							col.type === "numeric"
+								? districtVals.reduce((a, b) => a + b, 0)
+								: districtVals.reduce((a, b) => a + b, 0) /
+									districtVals.length;
+					}
 				}
+				if (val === null) val = aggregateExtra(col, filteredSchools);
 			}
-			if (val === null) val = aggregateExtra(col, filteredSchools);
 			extras[col.key] = val;
 		}
 
@@ -287,7 +336,7 @@ export function useDashboardData() {
 			districts: rows.length,
 			extras,
 		};
-	}, [rows, extraColumns, filteredSchools, institutionType]);
+	}, [rows, extraColumns, filteredSchools, institutionType, republicTotals]);
 
 	const selected =
 		selectedId !== null

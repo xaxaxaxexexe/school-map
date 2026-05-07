@@ -1,4 +1,4 @@
-export type ExtraType = "numeric" | "boolean" | "percent";
+export type ExtraType = "numeric" | "ratio" | "boolean" | "percent";
 
 export interface ExtraColumn {
 	key: string; // canonical key (lowercased, normalized)
@@ -33,4 +33,12 @@ export interface District {
 	monitoring_score: number | null;
 	// Raw extras from district row (used as fallback when no school-level data)
 	district_row_extras: Record<string, ExtraValue>;
+}
+
+export interface RepublicTotals {
+	students: number | null;
+	workers: number | null;
+	teachers: number | null;
+	capacity: number | null;
+	extras: Record<string, ExtraValue>;
 }

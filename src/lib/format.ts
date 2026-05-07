@@ -46,6 +46,7 @@ export function calcFillRate(
 export function fmtExtraValue(value: ExtraValue, type: ExtraType): string {
 	if (value == null) return "—";
 	if (type === "numeric") return fmt(value as number);
+	if (type === "ratio") return fmtDecimal(value as number);
 	if (type === "boolean") return yesNo(value as boolean);
 	if (type === "percent") return fmtPercent(value as number);
 	return "—";
@@ -57,5 +58,6 @@ export function fmtAggregatedExtra(
 ): string {
 	if (value == null) return "—";
 	if (type === "numeric") return fmt(value);
+	if (type === "ratio") return fmtDecimal(value);
 	return fmtPercent(value);
 }

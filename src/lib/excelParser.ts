@@ -4,6 +4,7 @@ import type {
 	ExtraColumn,
 	ExtraType,
 	ExtraValue,
+	RepublicTotals,
 	School,
 } from "@/types";
 import { DISTRICT_ID_MAP } from "@/data/districts";
@@ -151,6 +152,7 @@ function isNumericString(s: string): boolean {
 function classifyExtra(
 	values: Cell[],
 	hasPercentFormat: boolean,
+	hasDecimalFormat: boolean,
 ): ExtraType | null {
 	const non = values.filter((v) => v != null && v !== "");
 	if (non.length === 0) return null;
@@ -186,10 +188,12 @@ function classifyExtra(
 	if (!allNumeric) return "boolean";
 	if (numbers.length === 0) return null;
 	if (hasPercentFormat || hasPercentSign) return "percent";
+	if (hasDecimalFormat) return "ratio";
 	if (numbers.every((n) => n >= 0 && n <= 1)) {
 		if (numbers.some((n) => n !== Math.floor(n))) return "percent";
 		return "boolean";
 	}
+	if (numbers.some((n) => n !== Math.floor(n))) return "ratio";
 	return "numeric";
 }
 
@@ -207,6 +211,12 @@ function parseExtraValue(v: Cell, type: ExtraType): ExtraValue {
 	const s = String(v).trim().replace(/\s/g, "").replace(",", ".").replace("%", "");
 	const n = parseFloat(s);
 	return Number.isFinite(n) ? n : null;
+}
+
+function isRepublicTotalsRow(name: string | null): boolean {
+	if (!name) return false;
+	const n = name.toLowerCase().replace(/\s+/g, " ").trim();
+	return n.startsWith("итого");
 }
 
 const REQUIRED_ALIASES: Record<string, string[]> = {
@@ -329,6 +339,7 @@ export interface ParsedData {
 	schools: School[];
 	extraColumns: ExtraColumn[];
 	institutionTypes: string[];
+	republicTotals: RepublicTotals | null;
 }
 
 interface DistrictRowAccum {
@@ -343,6 +354,7 @@ interface DistrictRowAccum {
 function parseFlat(
 	rows: Cell[][],
 	percentFormatCols: Set<number>,
+	decimalFormatCols: Set<number>,
 ): ParsedData {
 	const header = rows[0]!;
 	const { required, extras: extraDefs } = indexHeaders(header);
@@ -362,6 +374,7 @@ function parseFlat(
 		  };
 
 	const classified: ClassifiedRow[] = [];
+	let republicRow: Cell[] | null = null;
 
 	for (let i = 1; i < rows.length; i++) {
 		const row = rows[i]!;
@@ -384,6 +397,11 @@ function parseFlat(
 			continue;
 		}
 
+		if (republicRow === null && isRepublicTotalsRow(name)) {
+			republicRow = row;
+			continue;
+		}
+
 		const candidate = normalizeDepartmentDistrictName(name);
 		if (candidate && candidate in DISTRICT_ID_MAP) {
 			classified.push({ kind: "district", row, districtName: candidate });
@@ -395,7 +413,11 @@ function parseFlat(
 	const extraCols: ExtraColumn[] = [];
 	for (const def of extraDefs) {
 		const values: Cell[] = classified.map((c) => cell(c.row, def.idx));
-		const type = classifyExtra(values, percentFormatCols.has(def.idx));
+		const type = classifyExtra(
+			values,
+			percentFormatCols.has(def.idx),
+			decimalFormatCols.has(def.idx),
+		);
 		if (type === null) continue;
 		extraCols.push({ key: def.key, label: def.label, type });
 	}
@@ -526,11 +548,29 @@ function parseFlat(
 	// Reference extraColMap to keep it accessible for fallback handling later
 	void extraColMap;
 
+	let republicTotals: RepublicTotals | null = null;
+	if (republicRow) {
+		const repExtras: Record<string, ExtraValue> = {};
+		for (const col of extraCols) {
+			const idx = extraIdxByKey.get(col.key);
+			if (idx == null) continue;
+			repExtras[col.key] = parseExtraValue(cell(republicRow, idx), col.type);
+		}
+		republicTotals = {
+			students: toInt(cell(republicRow, required.students)),
+			workers: toInt(cell(republicRow, required.workers)),
+			teachers: toInt(cell(republicRow, required.teachers)),
+			capacity: toInt(cell(republicRow, required.capacity)),
+			extras: repExtras,
+		};
+	}
+
 	return {
 		districts,
 		schools,
 		extraColumns: extraCols,
 		institutionTypes: sortedInstitutionTypes,
+		republicTotals,
 	};
 }
 
@@ -552,28 +592,38 @@ export function normalizeParsedData(data: ParsedData): ParsedData {
 		schools,
 		extraColumns: data.extraColumns ?? [],
 		institutionTypes: data.institutionTypes ?? [],
+		republicTotals: data.republicTotals ?? null,
 	};
 }
 
-function collectPercentFormatColumns(
-	sheet: XLSX.WorkSheet,
-): Set<number> {
-	const cols = new Set<number>();
+function collectFormatColumns(sheet: XLSX.WorkSheet): {
+	percent: Set<number>;
+	decimal: Set<number>;
+} {
+	const percent = new Set<number>();
+	const decimal = new Set<number>();
 	const ref = sheet["!ref"];
-	if (!ref) return cols;
+	if (!ref) return { percent, decimal };
 	const range = XLSX.utils.decode_range(ref);
 	for (let C = range.s.c; C <= range.e.c; C++) {
+		let isPercent = false;
+		let isDecimal = false;
 		for (let R = range.s.r; R <= range.e.r; R++) {
 			const cell = sheet[XLSX.utils.encode_cell({ r: R, c: C })] as
 				| { z?: string }
 				| undefined;
-			if (cell?.z && String(cell.z).includes("%")) {
-				cols.add(C);
+			const z = cell?.z ? String(cell.z) : "";
+			if (!z) continue;
+			if (z.includes("%")) {
+				isPercent = true;
 				break;
 			}
+			if (!isDecimal && /[0#]\.[0#]/.test(z)) isDecimal = true;
 		}
+		if (isPercent) percent.add(C);
+		else if (isDecimal) decimal.add(C);
 	}
-	return cols;
+	return { percent, decimal };
 }
 
 export function parseExcelFile(file: File): Promise<ParsedData> {
@@ -584,7 +634,8 @@ export function parseExcelFile(file: File): Promise<ParsedData> {
 				const data = new Uint8Array(e.target!.result as ArrayBuffer);
 				const workbook = XLSX.read(data, { type: "array", cellNF: true });
 				const sheet = workbook.Sheets[workbook.SheetNames[0]!]!;
-				const percentFormatCols = collectPercentFormatColumns(sheet);
+				const { percent: percentFormatCols, decimal: decimalFormatCols } =
+					collectFormatColumns(sheet);
 				const raw: Cell[][] = XLSX.utils.sheet_to_json(sheet, {
 					header: 1,
 					defval: null,
@@ -600,11 +651,12 @@ export function parseExcelFile(file: File): Promise<ParsedData> {
 						schools: [],
 						extraColumns: [],
 						institutionTypes: [],
+						republicTotals: null,
 					});
 					return;
 				}
 
-				resolve(parseFlat(rows, percentFormatCols));
+				resolve(parseFlat(rows, percentFormatCols, decimalFormatCols));
 			} catch (err) {
 				reject(err);
 			}

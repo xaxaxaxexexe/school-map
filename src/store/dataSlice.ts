@@ -1,5 +1,10 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { District, ExtraColumn, School } from "@/types";
+import type {
+	District,
+	ExtraColumn,
+	RepublicTotals,
+	School,
+} from "@/types";
 import { normalizeParsedData } from "@/lib/excelParser";
 
 const STORAGE_KEY = "schools_data_cache";
@@ -9,6 +14,7 @@ interface DataState {
 	schools: School[];
 	extraColumns: ExtraColumn[];
 	institutionTypes: string[];
+	republicTotals: RepublicTotals | null;
 	loaded: boolean;
 }
 
@@ -17,6 +23,7 @@ interface PersistedShape {
 	schools: School[];
 	extraColumns: ExtraColumn[];
 	institutionTypes: string[];
+	republicTotals: RepublicTotals | null;
 }
 
 function loadFromStorage(): PersistedShape | null {
@@ -40,6 +47,7 @@ function loadFromStorage(): PersistedShape | null {
 			institutionTypes: Array.isArray(parsed.institutionTypes)
 				? parsed.institutionTypes
 				: [],
+			republicTotals: parsed.republicTotals ?? null,
 		});
 		return normalized;
 	} catch {
@@ -60,6 +68,7 @@ const initialState: DataState = {
 	schools: cached?.schools ?? [],
 	extraColumns: cached?.extraColumns ?? [],
 	institutionTypes: cached?.institutionTypes ?? [],
+	republicTotals: cached?.republicTotals ?? null,
 	loaded: cached !== null,
 };
 
@@ -72,12 +81,14 @@ export const dataSlice = createSlice({
 			state.schools = action.payload.schools;
 			state.extraColumns = action.payload.extraColumns;
 			state.institutionTypes = action.payload.institutionTypes;
+			state.republicTotals = action.payload.republicTotals ?? null;
 			state.loaded = true;
 			saveToStorage({
 				districts: action.payload.districts,
 				schools: action.payload.schools,
 				extraColumns: action.payload.extraColumns,
 				institutionTypes: action.payload.institutionTypes,
+				republicTotals: action.payload.republicTotals ?? null,
 			});
 		},
 	},
