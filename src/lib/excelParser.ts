@@ -7,7 +7,7 @@ import type {
 	RepublicTotals,
 	School,
 } from "@/types";
-import { DISTRICT_ID_MAP } from "@/data/districts";
+import { DISTRICT_GEO, DISTRICT_ID_MAP } from "@/data/districts";
 
 type Cell = string | number | boolean | null | undefined;
 
@@ -25,6 +25,29 @@ const GROZNY_NAME_ALIASES = new Set([
 	"грозный (город)",
 	"городской округ грозный",
 ]);
+
+const CANONICAL_ARGUN_DISTRICT = "Аргун (город)";
+const ARGUN_NAME_ALIASES = new Set([
+	"аргун",
+	"г. аргун",
+	"г.аргун",
+	"город аргун",
+	"аргун (город)",
+	"городской округ аргун",
+]);
+
+const DISTRICT_ALIAS_MAP: Map<string, string> = (() => {
+	const map = new Map<string, string>();
+	for (const canonical of Object.keys(DISTRICT_GEO)) {
+		const lc = canonical.toLowerCase().replace(/ё/g, "е");
+		map.set(lc, canonical);
+		if (lc.includes("р-н")) {
+			map.set(lc.replace(/р-н/g, "район"), canonical);
+			map.set(lc.replace(/р-н/g, "р-он"), canonical);
+		}
+	}
+	return map;
+})();
 
 const NEGATIVE_TOKENS = new Set([
 	"",
@@ -86,7 +109,11 @@ function toStr(v: Cell): string | null {
 function normalizeDistrictName(v: string | null): string | null {
 	if (!v) return null;
 	const name = v.trim();
-	const normalized = name.toLowerCase().replace(/\s+/g, " ").trim();
+	const normalized = name
+		.toLowerCase()
+		.replace(/ё/g, "е")
+		.replace(/\s+/g, " ")
+		.trim();
 
 	if (
 		GROZNY_INTERNAL_DISTRICTS.has(normalized) ||
@@ -94,6 +121,13 @@ function normalizeDistrictName(v: string | null): string | null {
 	) {
 		return CANONICAL_GROZNY_DISTRICT;
 	}
+
+	if (ARGUN_NAME_ALIASES.has(normalized)) {
+		return CANONICAL_ARGUN_DISTRICT;
+	}
+
+	const aliased = DISTRICT_ALIAS_MAP.get(normalized);
+	if (aliased) return aliased;
 
 	return name;
 }
