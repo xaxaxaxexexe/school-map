@@ -1,8 +1,8 @@
 export type ExtraType = "numeric" | "ratio" | "boolean" | "percent";
 
 export interface ExtraColumn {
-	key: string; // canonical key (lowercased, normalized)
-	label: string; // original header text from Excel (cleaned)
+	key: string;
+	label: string;
 	type: ExtraType;
 }
 
@@ -31,7 +31,7 @@ export interface District {
 	workers: number | null;
 	teachers: number | null;
 	monitoring_score: number | null;
-	// Raw extras from district row (used as fallback when no school-level data)
+	monitoring_color: string | null;
 	district_row_extras: Record<string, ExtraValue>;
 }
 

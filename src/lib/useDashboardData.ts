@@ -1,10 +1,8 @@
 import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { DISTRICT_GEO, computeMonitoringMedian } from "@/data/districts";
+import { DISTRICT_GEO } from "@/data/districts";
 import type { District, ExtraColumn, School } from "@/types";
 
-// In filter modes (institutionType !== null) percent and ratio columns can't be
-// meaningfully re-aggregated from school rows (no weights), so we drop them.
 function canAggregateInFilterMode(type: ExtraColumn["type"]): boolean {
 	return type === "numeric" || type === "boolean";
 }
@@ -81,7 +79,6 @@ function aggregateExtra(
 		return sum;
 	}
 
-	// percent and ratio: unweighted mean across schools (best-effort fallback)
 	let sum = 0;
 	let n = 0;
 	for (const v of vals) {
@@ -125,11 +122,6 @@ export function useDashboardData() {
 		if (!institutionType) return allSchools;
 		return allSchools.filter((s) => s.institution_type === institutionType);
 	}, [allSchools, institutionType]);
-
-	const monitoringMedian = useMemo(
-		() => computeMonitoringMedian(allDistricts),
-		[allDistricts],
-	);
 
 	const rows = useMemo<DistrictRow[]>(() => {
 		if (!loaded) return [];
@@ -417,6 +409,5 @@ export function useDashboardData() {
 		setInstitutionType,
 		institutionTypes,
 		extraColumns,
-		monitoringMedian,
 	};
 }

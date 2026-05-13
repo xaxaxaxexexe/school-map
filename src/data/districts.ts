@@ -153,33 +153,18 @@ export const DISTRICT_ID_MAP: Record<string, number> = Object.fromEntries(
 	Object.entries(DISTRICT_GEO).map(([name, geo]) => [name, geo.id]),
 );
 
-const DEFAULT_COLOR = "#3b82f6";
-const MONITORING_RED = "#ef4444";
-const MONITORING_YELLOW = "#f59e0b";
-const MONITORING_GREEN = "#10b981";
+const DEFAULT_COLOR = "#ffffff";
 
-export function getMonitoringScoreColor(
-	score: number | null | undefined,
-	median?: number | null,
+export function getMonitoringColor(
+	district:
+		| {
+				monitoring_color?: string | null;
+		  }
+		| null
+		| undefined,
+	fallback = DEFAULT_COLOR,
 ): string {
-	if (score == null) return DEFAULT_COLOR;
-	if (score < 85) return MONITORING_RED;
-	if (median != null && score >= median) return MONITORING_GREEN;
-	return MONITORING_YELLOW;
-}
-
-export function computeMonitoringMedian(
-	districts: { monitoring_score: number | null }[],
-): number | null {
-	const scores = districts
-		.map((d) => d.monitoring_score)
-		.filter((s): s is number => s != null)
-		.sort((a, b) => a - b);
-	if (scores.length === 0) return null;
-	const mid = Math.floor(scores.length / 2);
-	return scores.length % 2 === 0
-		? (scores[mid - 1]! + scores[mid]!) / 2
-		: scores[mid]!;
+	return district?.monitoring_color ?? fallback;
 }
 
 function findGeoByBorderName(borderName: string): DistrictGeo | null {
@@ -195,16 +180,13 @@ export function getDistrictColor(
 	districts?: {
 		id: number | null;
 		name: string;
-		monitoring_score?: number | null;
+		monitoring_color?: string | null;
 	}[],
-	median?: number | null,
 ): string {
 	const geo = findGeoByBorderName(borderName);
 	if (!geo) return DEFAULT_COLOR;
 	const district = districts?.find((d) => d.id === geo.id);
-	return district
-		? getMonitoringScoreColor(district.monitoring_score, median)
-		: geo.color;
+	return district ? getMonitoringColor(district) : DEFAULT_COLOR;
 }
 
 export function matchBorderToDistrictId(

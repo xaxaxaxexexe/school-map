@@ -14,7 +14,7 @@ import {
 	schoolWord,
 	siteUrl,
 } from "@/lib/format";
-import { getMonitoringScoreColor } from "@/data/districts";
+import { getMonitoringColor } from "@/data/districts";
 import { SortArrow } from "@/components/ui/SortArrow";
 import { FillBar } from "@/components/ui/FillBar";
 import { BigStat } from "@/components/ui/BigStat";
@@ -86,11 +86,9 @@ function InstitutionTypeRadios({
 function DistrictSummaryPanel({
 	selected,
 	extraColumns,
-	monitoringMedian,
 }: {
 	selected: DistrictRow;
 	extraColumns: ExtraColumn[];
-	monitoringMedian: number | null;
 }) {
 	const score = selected.district.monitoring_score;
 	return (
@@ -103,7 +101,7 @@ function DistrictSummaryPanel({
 					<BigStat
 						label="Балл мониторинга"
 						value={fmtDecimal(score)}
-						accent={getMonitoringScoreColor(score, monitoringMedian)}
+						accent={getMonitoringColor(selected.district)}
 					/>
 				)}
 				<BigStat
@@ -360,7 +358,6 @@ export function DashboardPage() {
 		setInstitutionType,
 		institutionTypes,
 		extraColumns,
-		monitoringMedian,
 	} = useDashboardData();
 	const [expanded, setExpanded] = useState(false);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
@@ -491,7 +488,6 @@ export function DashboardPage() {
 							<DistrictSummaryPanel
 								selected={selected}
 								extraColumns={extraColumns}
-								monitoringMedian={monitoringMedian}
 							/>
 						)}
 					</div>
@@ -625,10 +621,7 @@ export function DashboardPage() {
 						<div className="flex-1 overflow-auto table-scroll md:hidden">
 							<div className="divide-y divide-neutral-100 dark:divide-neutral-700">
 								{sorted.map((r, i) => {
-									const monitoringColor = getMonitoringScoreColor(
-										r.district.monitoring_score,
-										monitoringMedian,
-									);
+									const monitoringColor = getMonitoringColor(r.district);
 									const isOpen = expandedCard === r.district.id;
 									const previewExtras = extraColumns.slice(0, 1);
 									return (
@@ -918,10 +911,7 @@ export function DashboardPage() {
 														title={monitoringTitle(r.district.monitoring_score)}
 														className="h-2.5 w-2.5 shrink-0 rounded-full"
 														style={{
-															backgroundColor: getMonitoringScoreColor(
-																r.district.monitoring_score,
-																monitoringMedian,
-															),
+															backgroundColor: getMonitoringColor(r.district),
 														}}
 													/>
 													<span className="font-semibold text-neutral-800 dark:text-neutral-200">
@@ -1041,7 +1031,6 @@ export function DashboardPage() {
 							<ChechenGrid
 								rows={rows}
 								onSelect={(id) => setSelectedId(id)}
-								monitoringMedian={monitoringMedian}
 							/>
 						)}
 					</div>

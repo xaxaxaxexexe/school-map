@@ -7,7 +7,7 @@ import type {
 } from "@/types";
 import { normalizeParsedData } from "@/lib/excelParser";
 
-const STORAGE_KEY = "schools_data_cache";
+const STORAGE_KEY = "schools_data_cache_v3";
 
 interface DataState {
 	districts: District[];

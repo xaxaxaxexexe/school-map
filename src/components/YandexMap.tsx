@@ -24,7 +24,6 @@ interface Props {
 	districts: District[];
 	onDistrictClick: (id: number) => void;
 	selectedDistrictId: number | null;
-	monitoringMedian: number | null;
 }
 
 function flipRing(ring: number[][]): number[][] {
@@ -59,7 +58,6 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 		districts,
 		onDistrictClick,
 		selectedDistrictId,
-		monitoringMedian,
 	},
 	ref,
 ) {
@@ -81,8 +79,6 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 	districtClickRef.current = onDistrictClick;
 	const selectedDistrictIdRef = useRef(selectedDistrictId);
 	selectedDistrictIdRef.current = selectedDistrictId;
-	const medianRef = useRef(monitoringMedian);
-	medianRef.current = monitoringMedian;
 
 	useEffect(() => {
 		let destroyed = false;
@@ -197,7 +193,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 						? coords.flatMap((poly: number[][][]) => poly.map(flipRing))
 						: coords.map(flipRing);
 
-				const hex = getDistrictColor(name, districtsRef.current, medianRef.current);
+				const hex = getDistrictColor(name, districtsRef.current);
 
 				const polygon = new ymaps.Polygon(
 					rings,
@@ -250,14 +246,14 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 		} catch (e) {
 			console.warn("Could not render district borders:", e);
 		}
-	}, [ready, districts, monitoringMedian]);
+	}, [ready, districts]);
 
 	useEffect(() => {
 		if (!bordersRef.current) return;
 
 		bordersRef.current.each((polygon: any) => {
 			const name: string = polygon.properties.get("districtName") ?? "";
-			const hex = getDistrictColor(name, districtsRef.current, medianRef.current);
+			const hex = getDistrictColor(name, districtsRef.current);
 			const id = matchBorderToDistrictId(name, districtsRef.current);
 			const isSelected = id != null && id === selectedDistrictId;
 
@@ -268,7 +264,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 				strokeWidth: isSelected ? 4 : 2,
 			});
 		});
-	}, [selectedDistrictId, monitoringMedian]);
+	}, [selectedDistrictId, districts]);
 
 	useEffect(() => {
 		if (!ready || !ymapsRef.current || !mapRef.current) return;

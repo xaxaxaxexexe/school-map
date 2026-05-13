@@ -10,6 +10,15 @@ import type {
 import { DISTRICT_GEO, DISTRICT_ID_MAP } from "@/data/districts";
 
 type Cell = string | number | boolean | null | undefined;
+type CellColorGetter = (rowIndex: number, colIndex: number | null) => string | null;
+type StyledCell = XLSX.CellObject & {
+	s?: {
+		patternType?: string;
+		fgColor?: {
+			rgb?: string;
+		};
+	};
+};
 
 const CANONICAL_GROZNY_DISTRICT = "Грозный (город)";
 const GROZNY_INTERNAL_DISTRICTS = new Set([
@@ -104,6 +113,27 @@ function toStr(v: Cell): string | null {
 	if (isNan(v)) return null;
 	const s = String(v).trim();
 	return s || null;
+}
+
+function normalizeFillRgb(rgb: string | undefined): string | null {
+	if (!rgb) return null;
+	const cleaned = rgb.trim().replace(/^#/, "");
+	if (!/^[0-9a-f]{6}([0-9a-f]{2})?$/i.test(cleaned)) return null;
+	const color = cleaned.length === 8 ? cleaned.slice(2) : cleaned;
+	return `#${color.toUpperCase()}`;
+}
+
+function getCellFillColor(
+	sheet: XLSX.WorkSheet,
+	rowIndex: number,
+	colIndex: number | null,
+): string | null {
+	if (colIndex === null) return null;
+	const addr = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex });
+	const styledCell = sheet[addr] as StyledCell | undefined;
+	const style = styledCell?.s;
+	if (style?.patternType !== "solid") return null;
+	return normalizeFillRgb(style.fgColor?.rgb);
 }
 
 function normalizeDistrictName(v: string | null): string | null {
@@ -392,6 +422,7 @@ export interface ParsedData {
 interface DistrictRowAccum {
 	name: string;
 	monitoring_score: number | null;
+	monitoring_color: string | null;
 	students: number | null;
 	workers: number | null;
 	teachers: number | null;
@@ -402,21 +433,23 @@ function parseFlat(
 	rows: Cell[][],
 	percentFormatCols: Set<number>,
 	decimalFormatCols: Set<number>,
+	getCellColor?: CellColorGetter,
 ): ParsedData {
 	const header = rows[0]!;
 	const { required, extras: extraDefs } = indexHeaders(header);
 
-	// Pass 1: classify rows + collect raw extra cells from school rows
 	type ClassifiedRow =
 		| {
 				kind: "school";
 				row: Cell[];
+				rowIndex: number;
 				districtName: string | null;
 				institutionType: string | null;
 		  }
 		| {
 				kind: "district";
 				row: Cell[];
+				rowIndex: number;
 				districtName: string;
 		  };
 
@@ -438,6 +471,7 @@ function parseFlat(
 			classified.push({
 				kind: "school",
 				row,
+				rowIndex: i,
 				districtName,
 				institutionType,
 			});
@@ -451,12 +485,16 @@ function parseFlat(
 
 		const candidate = normalizeDepartmentDistrictName(name);
 		if (candidate && candidate in DISTRICT_ID_MAP) {
-			classified.push({ kind: "district", row, districtName: candidate });
+			classified.push({
+				kind: "district",
+				row,
+				rowIndex: i,
+				districtName: candidate,
+			});
 			continue;
 		}
 	}
 
-	// Pass 2: classify each extra column based on values across all classified rows
 	const extraCols: ExtraColumn[] = [];
 	for (const def of extraDefs) {
 		const values: Cell[] = classified.map((c) => cell(c.row, def.idx));
@@ -472,7 +510,6 @@ function parseFlat(
 	const extraColMap = new Map(extraCols.map((c) => [c.key, c]));
 	const extraIdxByKey = new Map(extraDefs.map((d) => [d.key, d.idx]));
 
-	// Pass 3: build School + DistrictRowAccum collections
 	const schools: School[] = [];
 	const districtRowAcc = new Map<string, DistrictRowAccum>();
 	const institutionTypes = new Set<string>();
@@ -517,6 +554,7 @@ function parseFlat(
 				acc = {
 					name: c.districtName,
 					monitoring_score: null,
+					monitoring_color: null,
 					students: null,
 					workers: null,
 					teachers: null,
@@ -526,6 +564,11 @@ function parseFlat(
 			}
 			const ms = toFloat(cell(row, required.monitoring_score));
 			if (ms != null) acc.monitoring_score = ms;
+			const monitoringColor = getCellColor?.(
+				c.rowIndex,
+				required.monitoring_score,
+			);
+			if (monitoringColor) acc.monitoring_color = monitoringColor;
 			const st = toInt(cell(row, required.students));
 			if (st != null) acc.students = st;
 			const wk = toInt(cell(row, required.workers));
@@ -543,12 +586,10 @@ function parseFlat(
 		}
 	}
 
-	// Build districts: ensure all known DISTRICT_ID_MAP entries exist
 	const districts: District[] = [];
 	const seenDistrictNames = new Set<string>();
 	for (const [name, id] of Object.entries(DISTRICT_ID_MAP)) {
 		const acc = districtRowAcc.get(name);
-		// Aggregate counts from schools as a baseline (kept for compatibility, but actual aggregation lives in useDashboardData)
 		const schoolList = schools.filter((s) => s.district === name);
 		const studentsFromSchools = schoolList.reduce(
 			(s, x) => s + (x.students ?? 0),
@@ -577,12 +618,12 @@ function parseFlat(
 				schoolList.length > 0 ? teachersFromSchools : (acc?.teachers ?? null),
 			monitoring_score:
 				monitoringFromSchools ?? acc?.monitoring_score ?? null,
+			monitoring_color: acc?.monitoring_color ?? null,
 			district_row_extras: acc?.extras ?? {},
 		});
 		seenDistrictNames.add(name);
 	}
 
-	// Sort by id ascending (null ids last); keep stable order
 	districts.sort(
 		(a, b) =>
 			(a.id === null ? 1 : 0) - (b.id === null ? 1 : 0) ||
@@ -593,7 +634,6 @@ function parseFlat(
 		a.localeCompare(b, "ru"),
 	);
 
-	// Reference extraColMap to keep it accessible for fallback handling later
 	void extraColMap;
 
 	let republicTotals: RepublicTotals | null = null;
@@ -632,6 +672,7 @@ export function normalizeParsedData(data: ParsedData): ParsedData {
 		...district,
 		name: normalizeDistrictName(district.name) ?? district.name,
 		monitoring_score: district.monitoring_score ?? null,
+		monitoring_color: district.monitoring_color ?? null,
 		district_row_extras: district.district_row_extras ?? {},
 	}));
 
@@ -668,8 +709,9 @@ function collectFormatColumns(sheet: XLSX.WorkSheet): {
 			}
 			if (!isDecimal && /[0#]\.[0#]/.test(z)) isDecimal = true;
 		}
-		if (isPercent) percent.add(C);
-		else if (isDecimal) decimal.add(C);
+		const relativeColumn = C - range.s.c;
+		if (isPercent) percent.add(relativeColumn);
+		else if (isDecimal) decimal.add(relativeColumn);
 	}
 	return { percent, decimal };
 }
@@ -680,8 +722,15 @@ export function parseExcelFile(file: File): Promise<ParsedData> {
 		reader.onload = (e) => {
 			try {
 				const data = new Uint8Array(e.target!.result as ArrayBuffer);
-				const workbook = XLSX.read(data, { type: "array", cellNF: true });
+				const workbook = XLSX.read(data, {
+					type: "array",
+					cellNF: true,
+					cellStyles: true,
+				});
 				const sheet = workbook.Sheets[workbook.SheetNames[0]!]!;
+				const sheetRange = sheet["!ref"]
+					? XLSX.utils.decode_range(sheet["!ref"])
+					: null;
 				const { percent: percentFormatCols, decimal: decimalFormatCols } =
 					collectFormatColumns(sheet);
 				const raw: Cell[][] = XLSX.utils.sheet_to_json(sheet, {
@@ -689,9 +738,12 @@ export function parseExcelFile(file: File): Promise<ParsedData> {
 					defval: null,
 				});
 
-				const rows = raw.filter((row) =>
-					row.some((c) => c !== null && c !== undefined && c !== ""),
-				);
+				const nonEmptyRows = raw
+					.map((row, rawIndex) => ({ row, rawIndex }))
+					.filter(({ row }) =>
+						row.some((c) => c !== null && c !== undefined && c !== ""),
+					);
+				const rows = nonEmptyRows.map(({ row }) => row);
 
 				if (rows.length === 0) {
 					resolve({
@@ -704,7 +756,25 @@ export function parseExcelFile(file: File): Promise<ParsedData> {
 					return;
 				}
 
-				resolve(parseFlat(rows, percentFormatCols, decimalFormatCols));
+				const getCellColor: CellColorGetter = (rowIndex, colIndex) => {
+					const sourceRowIndex = nonEmptyRows[rowIndex]?.rawIndex;
+					return sourceRowIndex == null
+						? null
+						: getCellFillColor(
+								sheet,
+								sourceRowIndex + (sheetRange?.s.r ?? 0),
+								colIndex == null ? null : colIndex + (sheetRange?.s.c ?? 0),
+							);
+				};
+
+				resolve(
+					parseFlat(
+						rows,
+						percentFormatCols,
+						decimalFormatCols,
+						getCellColor,
+					),
+				);
 			} catch (err) {
 				reject(err);
 			}

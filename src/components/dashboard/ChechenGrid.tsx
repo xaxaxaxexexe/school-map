@@ -1,11 +1,9 @@
 import type { DistrictRow } from "@/lib/useDashboardData";
-import { getMonitoringScoreColor } from "@/data/districts";
-import { fmtDecimal } from "@/lib/format";
+import { getMonitoringColor } from "@/data/districts";
 
 interface ChechenGridProps {
 	rows: DistrictRow[];
 	onSelect: (id: number) => void;
-	monitoringMedian: number | null;
 }
 
 const SHORT: Record<string, string> = {
@@ -96,16 +94,14 @@ function CellButton({
 	onSelect,
 	small,
 	label,
-	median,
 }: {
 	row: DistrictRow | undefined;
 	onSelect: (id: number) => void;
 	small?: boolean;
 	label?: string;
-	median: number | null;
 }) {
 	if (!row) return null;
-	const color = getMonitoringScoreColor(row.district.monitoring_score, median);
+	const color = getMonitoringColor(row.district);
 	const text = label ?? SHORT[row.district.name] ?? row.shortName;
 	return (
 		<button
@@ -132,15 +128,9 @@ function CellButton({
 export function ChechenGrid({
 	rows,
 	onSelect,
-	monitoringMedian,
 }: ChechenGridProps) {
 	const groznyMain = findRow(rows, "Грозный (город)");
-	const groznyColor = getMonitoringScoreColor(
-		groznyMain?.district.monitoring_score,
-		monitoringMedian,
-	);
-	const medianLabel =
-		monitoringMedian != null ? fmtDecimal(monitoringMedian) : "—";
+	const groznyColor = getMonitoringColor(groznyMain?.district);
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -187,32 +177,10 @@ export function ChechenGrid({
 								row={findRow(rows, cell.name)}
 								onSelect={onSelect}
 								label={SHORT[cell.name]}
-								median={monitoringMedian}
 							/>
 						);
 					}),
 				)}
-			</div>
-			<div
-				className="mt-2 flex items-center justify-end gap-4 px-1 text-[10px] sm:text-xs text-neutral-500 dark:text-neutral-400"
-				title={
-					monitoringMedian != null
-						? `Медиана балла мониторинга: ${medianLabel}`
-						: undefined
-				}
-			>
-				<span className="flex items-center gap-1.5">
-					<span className="h-2.5 w-2.5 rounded-sm bg-rose-500" />
-					&lt; 85
-				</span>
-				<span className="flex items-center gap-1.5">
-					<span className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
-					85 – {medianLabel}
-				</span>
-				<span className="flex items-center gap-1.5">
-					<span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" />
-					≥ {medianLabel}
-				</span>
 			</div>
 		</div>
 	);
