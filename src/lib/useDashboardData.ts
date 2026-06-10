@@ -116,12 +116,30 @@ export function useDashboardData() {
 		key: "name",
 		dir: "asc",
 	});
-	const [institutionType, setInstitutionType] = useState<string | null>(null);
+	const [institutionTypeFilter, setInstitutionTypeFilter] = useState<string[]>(
+		[],
+	);
+
+	const toggleInstitutionType = (t: string | null) => {
+		if (t === null) {
+			setInstitutionTypeFilter([]);
+			return;
+		}
+		setInstitutionTypeFilter((prev) =>
+			prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+		);
+	};
+
+	const hasTypeFilter = institutionTypeFilter.length > 0;
 
 	const filteredSchools = useMemo(() => {
-		if (!institutionType) return allSchools;
-		return allSchools.filter((s) => s.institution_type === institutionType);
-	}, [allSchools, institutionType]);
+		if (institutionTypeFilter.length === 0) return allSchools;
+		return allSchools.filter(
+			(s) =>
+				s.institution_type != null &&
+				institutionTypeFilter.includes(s.institution_type),
+		);
+	}, [allSchools, institutionTypeFilter]);
 
 	const rows = useMemo<DistrictRow[]>(() => {
 		if (!loaded) return [];
@@ -159,7 +177,7 @@ export function useDashboardData() {
 				const extras: Record<string, number | null> = {};
 				for (const col of extraColumns) {
 					let val: number | null = null;
-					if (institutionType) {
+					if (hasTypeFilter) {
 						if (canAggregateInFilterMode(col.type)) {
 							val = aggregateExtra(col, schools);
 						}
@@ -191,7 +209,7 @@ export function useDashboardData() {
 					extras,
 				};
 			});
-	}, [allDistricts, filteredSchools, loaded, extraColumns, institutionType]);
+	}, [allDistricts, filteredSchools, loaded, extraColumns, hasTypeFilter]);
 
 	const toggleDistrictSort = (key: string) => {
 		setDistrictSort((prev) =>
@@ -251,7 +269,7 @@ export function useDashboardData() {
 	}, [rows, districtQuery, districtSort]);
 
 	const totals = useMemo<DashboardTotals>(() => {
-		const useRepublicRow = !institutionType && republicTotals !== null;
+		const useRepublicRow = !hasTypeFilter && republicTotals !== null;
 
 		const sumStudents = rows.reduce((s, r) => s + r.totalStudents, 0);
 		const sumCapacity = rows.reduce((s, r) => s + r.totalCapacity, 0);
@@ -291,7 +309,7 @@ export function useDashboardData() {
 		const extras: Record<string, number | null> = {};
 		for (const col of extraColumns) {
 			let val: number | null = null;
-			if (institutionType) {
+			if (hasTypeFilter) {
 				if (canAggregateInFilterMode(col.type)) {
 					val = aggregateExtra(col, filteredSchools);
 				}
@@ -334,7 +352,7 @@ export function useDashboardData() {
 			districts: rows.length,
 			extras,
 		};
-	}, [rows, extraColumns, filteredSchools, institutionType, republicTotals]);
+	}, [rows, extraColumns, filteredSchools, hasTypeFilter, republicTotals]);
 
 	const selected =
 		selectedId !== null
@@ -405,8 +423,8 @@ export function useDashboardData() {
 		toggleDistrictSort,
 		schoolSort,
 		toggleSchoolSort,
-		institutionType,
-		setInstitutionType,
+		institutionTypeFilter,
+		toggleInstitutionType,
 		institutionTypes,
 		extraColumns,
 	};

@@ -47,35 +47,60 @@ function monitoringTitle(score: number | null): string {
 	return `Балл мониторинга: ${fmtDecimal(score)}`;
 }
 
-function InstitutionTypeRadios({
+function InstitutionTypeFilter({
 	institutionTypes,
 	value,
-	onChange,
+	onToggle,
 }: {
 	institutionTypes: string[];
-	value: string | null;
-	onChange: (v: string | null) => void;
+	value: string[];
+	onToggle: (v: string | null) => void;
 }) {
 	if (institutionTypes.length === 0) return null;
-	const items: { label: string; v: string | null }[] = [
-		{ label: "Все учреждения", v: null },
-		...institutionTypes.map((t) => ({ label: t, v: t })),
-	];
+	const allActive = value.length === 0;
+	const chipClass = (active: boolean) =>
+		`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+			active
+				? "bg-blue-600 text-white shadow-sm"
+				: "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+		}`;
 	return (
 		<div className="flex flex-wrap gap-2">
-			{items.map((it) => {
-				const active = it.v === value;
+			<button onClick={() => onToggle(null)} className={chipClass(allActive)}>
+				Все учреждения
+			</button>
+			{institutionTypes.map((t) => {
+				const active = value.includes(t);
 				return (
 					<button
-						key={it.label}
-						onClick={() => onChange(it.v)}
-						className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
-							active
-								? "bg-blue-600 text-white shadow-sm"
-								: "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700"
-						}`}
+						key={t}
+						onClick={() => onToggle(t)}
+						className={`inline-flex items-center gap-1.5 ${chipClass(active)}`}
 					>
-						{it.label}
+						<span
+							className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition ${
+								active
+									? "border-white/70 bg-white/20"
+									: "border-neutral-300 dark:border-neutral-600"
+							}`}
+						>
+							{active && (
+								<svg
+									className="h-2.5 w-2.5"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth={3}
+									viewBox="0 0 24 24"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M5 13l4 4L19 7"
+									/>
+								</svg>
+							)}
+						</span>
+						{t}
 					</button>
 				);
 			})}
@@ -354,8 +379,8 @@ export function DashboardPage() {
 		toggleDistrictSort,
 		schoolSort,
 		toggleSchoolSort,
-		institutionType,
-		setInstitutionType,
+		institutionTypeFilter,
+		toggleInstitutionType,
 		institutionTypes,
 		extraColumns,
 	} = useDashboardData();
@@ -433,14 +458,16 @@ export function DashboardPage() {
 								</h2>
 								<span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">
 									<span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-									{institutionType ?? "Все учреждения"}
+									{institutionTypeFilter.length > 0
+										? institutionTypeFilter.join(", ")
+										: "Все учреждения"}
 								</span>
 							</div>
 							{institutionTypes.length > 0 && (
-								<InstitutionTypeRadios
+								<InstitutionTypeFilter
 									institutionTypes={institutionTypes}
-									value={institutionType}
-									onChange={setInstitutionType}
+									value={institutionTypeFilter}
+									onToggle={toggleInstitutionType}
 								/>
 							)}
 						</div>
@@ -448,6 +475,25 @@ export function DashboardPage() {
 						<div className="flex h-[60vh] flex-col overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30 lg:h-auto lg:min-h-0 lg:flex-1">
 							<div className="flex shrink-0 flex-col gap-2 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50/60 dark:bg-neutral-800/60 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
 								<div className="flex items-center gap-3">
+									<button
+										onClick={() => setSelectedId(null)}
+										title="Все районы"
+										className="-ml-1 inline-flex cursor-pointer items-center justify-center rounded-lg p-1 text-blue-600 transition hover:bg-blue-50 dark:hover:bg-blue-900 active:scale-95"
+									>
+										<svg
+											className="h-4 w-4"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M15 19l-7-7 7-7"
+											/>
+										</svg>
+									</button>
 									<h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
 										Показатели по школам
 									</h3>
@@ -568,10 +614,10 @@ export function DashboardPage() {
 					className={`flex min-w-0 flex-col p-4 lg:min-h-0 lg:p-6 ${expanded ? "lg:flex-1" : "lg:flex-1 lg:w-1/2 xl:w-[62%] lg:shrink-0"}`}
 				>
 					<div className="mb-3">
-						<InstitutionTypeRadios
+						<InstitutionTypeFilter
 							institutionTypes={institutionTypes}
-							value={institutionType}
-							onChange={setInstitutionType}
+							value={institutionTypeFilter}
+							onToggle={toggleInstitutionType}
 						/>
 					</div>
 					<div className="flex h-[70vh] min-w-0 flex-col overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30 lg:h-auto lg:min-h-0 lg:flex-1">
