@@ -78,18 +78,18 @@ function InstitutionTypeFilter({
 						className={`inline-flex items-center gap-1.5 ${chipClass(active)}`}
 					>
 						<span
-							className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition ${
+							className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
 								active
-									? "border-white/70 bg-white/20"
+									? "border-white bg-white text-blue-600"
 									: "border-neutral-300 dark:border-neutral-600"
 							}`}
 						>
 							{active && (
 								<svg
-									className="h-2.5 w-2.5"
+									className="h-3 w-3"
 									fill="none"
 									stroke="currentColor"
-									strokeWidth={3}
+									strokeWidth={4}
 									viewBox="0 0 24 24"
 								>
 									<path
@@ -941,58 +941,62 @@ export function DashboardPage() {
 												: "bg-neutral-100 dark:bg-neutral-800") +
 											" group-hover:bg-blue-50 dark:group-hover:bg-blue-900";
 										return (
-										<tr
-											key={`${r.district.id}-${r.district.name}`}
-											onClick={() => setSelectedId(r.district.id!)}
-											className={`group cursor-pointer border-b border-neutral-100 dark:border-neutral-700 transition hover:bg-blue-50 dark:hover:bg-blue-900 ${i % 2 === 0 ? "bg-white dark:bg-neutral-800" : "bg-neutral-100 dark:bg-neutral-800"}`}
-										>
-											<td
-												className={`sticky left-0 z-10 w-14 ${stickyBg} py-4 pl-5 font-medium text-neutral-400 dark:text-neutral-500 transition-colors`}
+											<tr
+												key={`${r.district.id}-${r.district.name}`}
+												onClick={() => setSelectedId(r.district.id!)}
+												className={`group cursor-pointer border-b border-neutral-100 dark:border-neutral-700 transition hover:bg-blue-50 dark:hover:bg-blue-900 ${i % 2 === 0 ? "bg-white dark:bg-neutral-800" : "bg-neutral-100 dark:bg-neutral-800"}`}
 											>
-												{i + 1}
-											</td>
-											<td className={`sticky left-8 z-20 ${stickyBg} py-4 pl-5 pr-6 transition-colors shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.18)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.55)]`}>
-												<div className="flex items-center gap-3">
-													<span
-														title={monitoringTitle(r.district.monitoring_score)}
-														className="h-2.5 w-2.5 shrink-0 rounded-full"
-														style={{
-															backgroundColor: getMonitoringColor(r.district),
-														}}
-													/>
-													<span className="font-semibold text-neutral-800 dark:text-neutral-200">
-														{r.shortName}
-													</span>
-												</div>
-											</td>
-											<td className="py-4 px-4 text-center">
-												<FillBar value={r.fillRate} />
-											</td>
-											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-												{r.schoolCount}
-											</td>
-											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-												{r.totalCapacity.toLocaleString("ru")}
-											</td>
-											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-												{r.totalStudents.toLocaleString("ru")}
-											</td>
-											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-												{r.totalWorkers.toLocaleString("ru")}
-											</td>
-											<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
-												{r.totalTeachers.toLocaleString("ru")}
-											</td>
-											{expanded &&
-												extraColumns.map((col) => (
-													<td
-														key={col.key}
-														className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300"
-													>
-														{fmtAggregatedExtra(r.extras[col.key], col.type)}
-													</td>
-												))}
-										</tr>
+												<td
+													className={`sticky left-0 z-10 w-14 ${stickyBg} py-4 pl-5 font-medium text-neutral-400 dark:text-neutral-500 transition-colors`}
+												>
+													{i + 1}
+												</td>
+												<td
+													className={`sticky left-8 z-20 ${stickyBg} py-4 pl-5 pr-6 transition-colors shadow-[inset_-1px_0_0_0_#d4d4d4,6px_0_8px_-6px_rgba(0,0,0,0.18)] dark:shadow-[inset_-1px_0_0_0_#525252,6px_0_8px_-6px_rgba(0,0,0,0.55)]`}
+												>
+													<div className="flex items-center gap-3">
+														<span
+															title={monitoringTitle(
+																r.district.monitoring_score,
+															)}
+															className="h-2.5 w-2.5 shrink-0 rounded-full"
+															style={{
+																backgroundColor: getMonitoringColor(r.district),
+															}}
+														/>
+														<span className="font-semibold text-neutral-800 dark:text-neutral-200">
+															{r.shortName}
+														</span>
+													</div>
+												</td>
+												<td className="py-4 px-4 text-center">
+													<FillBar value={r.fillRate} />
+												</td>
+												<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+													{r.schoolCount}
+												</td>
+												<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+													{r.totalCapacity.toLocaleString("ru")}
+												</td>
+												<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+													{r.totalStudents.toLocaleString("ru")}
+												</td>
+												<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+													{r.totalWorkers.toLocaleString("ru")}
+												</td>
+												<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+													{r.totalTeachers.toLocaleString("ru")}
+												</td>
+												{expanded &&
+													extraColumns.map((col) => (
+														<td
+															key={col.key}
+															className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300"
+														>
+															{fmtAggregatedExtra(r.extras[col.key], col.type)}
+														</td>
+													))}
+											</tr>
 										);
 									})}
 								</tbody>
@@ -1074,10 +1078,7 @@ export function DashboardPage() {
 								/>
 							</div>
 						) : (
-							<ChechenGrid
-								rows={rows}
-								onSelect={(id) => setSelectedId(id)}
-							/>
+							<ChechenGrid rows={rows} onSelect={(id) => setSelectedId(id)} />
 						)}
 					</div>
 				)}
